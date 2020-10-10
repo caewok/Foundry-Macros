@@ -3,12 +3,12 @@
 
 // Die sides
 const ACTION_DIE_SIDES = {
-  ranged_attack = "1d4",
-  movement = "1d6",
-  swap_gear = "1d6"
-  other_action = "1d6",
-  melee_attack = "1d8",
-  spell = "1d10"
+  ranged_attack: "1d4",
+  movement: "1d6",
+  swap_gear: "1d6",
+  other_action: "1d6",
+  melee_attack: "1d8",
+  spell: "1d10"
 };
 
 const REVISED_ATTACK = false;
@@ -31,7 +31,7 @@ const HTML_ATTACK_DIE_OPTIONS =
 <option value="2d10">2d10</option>  
 <option value="2d12">2d12</option>  
 <option value="1">1</option>
-`
+`;
 
 // Only used if REVISED_SPELL is true
 // The value must be a valid die roll command.
@@ -49,7 +49,7 @@ const HTML_SPELL_DIE_OPTIONS =
 <option value="7">7</option>
 <option value="8">8</option>  
 <option value="9">9</option>  
-`
+`;
 
 
 
@@ -76,7 +76,7 @@ const selectCombatantsHeaderLabel = "Select Combatants";
 const selectCombatantsParagraph = 
 `Select one or more of the following to set their initiative for this turn.
  <br><em> Selecting more than one will set the same actions for all selected.</em>
-`
+`;
 
 const selectActionsParagraph = "Please select one or more actions for:";
 const selectActionsBonusParagraph = "Initiative bonus/penalty steps largest die down/up, respectively.";
