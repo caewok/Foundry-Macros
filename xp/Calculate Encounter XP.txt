@@ -1,31 +1,18 @@
-// Calculate Encounter XP by adding up all the creatures on the map
+// ----------------------------------------------
+// CALCULATE ENCOUNTER XP
+// ----------------------------------------------
+// Basic XP calculator. Select one or more creatures. 
+// Adds up the XP; allows you to de-select or add additional xp for each creature. 
+// Ignores PCs.
+
 
 // Gather tokens in the current scene into an array.
-// let tokens = canvas.tokens.placeables.filter((token) => token.data);
-
 let tokens = getEnemyActors();
-
-
 //console.log(tokens[0].data);
 
-// From the tokens array sort into PC and NPC arrays.
-/*
-for (let count of tokens) {
-  let tokenType = count.data.type;
-  let tokenName = count.data.name;
-  let tokenXP = count.data.data.details.xp.value;
-  
-  console.log(tokenType + tokenName + tokenPassive);
-  
-  //if(tokenType === "character") {
-  //  pcArray.push({ name: tokenName, passive: tokenPassive });
-  //} 
-  if(tokenType === "npc") {
-    npcArray.push({ name: tokenName, XP: tokenXP });
-  }
-}
-*/
-
+/**
+ * Find selected hostile creatures. If none selected, use every hostile in the scene.
+ */ 
 function getEnemyActors() {
   // Prioritize selected hostile enemies
   const controlledEnemyActors = canvas.tokens.controlled
@@ -42,12 +29,16 @@ function getEnemyActors() {
     .map((a) => a.actor);
 }
 
-let dialogHeader = 
+// Construct dialog piecemeal.
+
+// JQuery header
+const dialogHeader = 
 `
  <script  src="https://code.jquery.com/jquery-3.4.1.js"   integrity="sha256-WpOohJOqMqqyKL9FccASB9O0KwACQJpFTUBLTYOVvVU="   crossorigin="anonymous"></script>
 `;
 
-let dialogStyle = 
+// CSS
+const dialogStyle = 
 `
 <style>
 form {
@@ -63,14 +54,14 @@ height: 25px;
 </style> 
 `;
 
+// Introductory paragraph
 let dialogIntro = 
 `
 <p>Select the button to include/omit creature from xp. Use a positive or negative integer if XP for the creature should be increased or decreased, respectively.</p>
 `;
 
-
-
-let tableHead = 
+// Table listing hostile creatures by name, with XP, adjustment box, and totals.
+const tableHead = 
 `
 <form id="xp_form">
 <table id='worksheet_table' class="table table-striped">
@@ -93,7 +84,7 @@ tokens.forEach(actor => {
   const xp = parseInt( actor.data.data.details.xp.value )||0;
 
   
-  let tableRow = 
+  const tableRow = 
 `
   <tr class="character-row">
                 <td> <input type="checkbox" id="useCreature" name="useCreature" class="useCreature" value="1" Checked></td>
@@ -108,7 +99,7 @@ tokens.forEach(actor => {
 });
 
 
-let tableEnd = 
+const tableEnd = 
 `
               <tr>
                 <td colspan="4" id="character" name="blank" style="border-top:4px double; padding-top:1em">Total Encounter Experience</td>
@@ -123,9 +114,10 @@ let tableEnd =
 </form>
 `;
 
-let dialogTable = tableHead + tableRows + tableEnd;             
-              
-let dialogScript = 
+const dialogTable = tableHead + tableRows + tableEnd;             
+                         
+// JQuery to automatically calculate totals.              
+const dialogScript = 
 `
 <script>
   
@@ -234,9 +226,10 @@ $('.resetButton').click(function(e) {
 
 `;
 
-let dialogContent = dialogHeader + dialogStyle + dialogIntro + dialogTable + dialogScript;
+// Full dialog content
+const dialogContent = dialogHeader + dialogStyle + dialogIntro + dialogTable + dialogScript;
 
-console.log(dialogContent);
+// console.log(dialogContent);
 
 new Dialog({
     title: "Sum Encounter XP",
