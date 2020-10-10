@@ -1,0 +1,1343 @@
+// --------------------------------------
+// BASIC 	LOCALIZATION SUPPORT
+// Set names and error messages as constants for easier translation
+// Thanks https://github.com/foundry-vtt-community/macros/blob/f07330b99ec2bde5818600410528ed452272a956/5e/sneak_attack.js
+const errorNoCombatants = 'No combatants found in the combat tracker.'
+const errorNoCombatantsOwned = 'No owned combatants found in the combat tracker.'
+// --------------------------------------
+
+
+
+
+
+
+
+/**
+ * Compares combat token list to the currently selected actors.
+ * @combatants Array of combatants.
+ * @return An array of combatants. Could be empty.
+ */
+function filterSelectedCombatants(combatants) {
+  //console.log("filterSelectedCombatants");
+  const actors = canvas.tokens.controlled.map(({ actor }) => actor);
+  var combatantsSelected = [];
+  var actor_ids = [];
+  if(actors.length < 1) {
+    return combatantsSelected;
+  }
+  
+  
+  actors.forEach( a => actor_ids.push(a.data._id));
+  //console.log(actor_ids);
+  combatantsSelected = combatants.filter(c => actor_ids.includes(c.actor.data._id));
+  
+  
+  //combatants.forEach( function(c) {
+	//	if(actor_ids.includes(c.actor.data._id)) {
+	//		combatantsSelected.push(c);
+	//	}
+	//});
+	//console.log(combatantsSelected);
+	
+
+	
+	return combatantsSelected;
+}
+
+/**
+ * Partition combatants into NPC vs Player combatants.
+ * @combatants. Array of combatants.
+ * @return A structure of { npcCombatants, playerCombatants }.
+ */
+function partitionCombatants(combatants) {
+  let playerCombatants = [];
+	let npcCombatants = [];
+	combatants.forEach( function(c) {
+		if(c.players.length > 0) {
+			playerCombatants.push(c);
+		} else {
+			npcCombatants.push(c);
+		}
+	});
+	
+	return { playerCombatants, npcCombatants };
+}
+
+
+
+// ----------------------------------------------
+// Combatant Selection Dialog components
+function constructCombatantSelectionHTML(combatants) {
+  //console.log(combatants.length + " combatants to partition.");
+  const { playerCombatants, npcCombatants } = partitionCombatants(combatants);
+  //console.log(playerCombatants.length + " PCs and " + npcCombatants.length + " NPCs.");
+
+  // simplify to names needed
+  
+  // testing version
+  //const PCs = playerCombatants.map(c => ({ id:c.id, name:c.name }));
+  //const NPCs = npcCombatants.map(c => ({ id:c.id, name:c.name, groupname:c.groupname, grouptype:c.grouptype}));
+
+  // actual version
+  const PCs = playerCombatants.map(c => ({ id:c._id, name:c.name }));
+  const NPCs = npcCombatants.map(c => ({ id:c._id, name:c.name, groupname:c.actor.data.token.name, grouptype:c.actor.data.data.details.type}));
+
+  let group_names = [];
+  let group_types = [];
+  
+  const include_pcs = PCs.length > 0;
+  const include_npcs = NPCs.length > 0;
+  
+  // create the jquery script elements
+  if(NPCs.length > 2) {
+    // need the distinct groupings
+    group_names = [...new Set(NPCs.map(a => a.groupname))];
+    group_types = [...new Set(NPCs.map(a => a.grouptype))];
+    
+    if(group_names.length < 2) {
+      group_names = [];
+    }
+    
+    if(group_types.length < 2) {
+      group_names = [];
+    }
+  }
+  
+  //console.log("Group names: " + group_names);
+  //console.log("Group types: " + group_types);  
+  
+  const script_html = constructSelectionScript(include_pcs, include_npcs, group_types, group_names);
+  
+  // create the main html code
+  
+  // PCs  
+  let pc_block_html = "";
+  if(include_pcs) {
+    let pc_selection_arr = [];
+    PCs.forEach(a => pc_selection_arr.push(constructCombatantSelection(a.id, a.name, "PCs")));
+    const pc_selection_html = pc_selection_arr.join(" <br> ");
+    
+		pc_block_html = 
+		`
+		${combatant_selection_pcs_header}
+		${pc_selection_html}
+		<br><br>
+		`;
+	}  
+	
+	// NPCs, including group selectors if applicable
+	// Don't bother with group selectors unless we have at least two distinct groups
+	let npc_block_html = "";
+	let npc_group_type_block_html = "";
+	let npc_group_name_block_html = "";
+	if(include_npcs) {
+	  let npc_selection_arr = [];
+	  NPCs.forEach(a => npc_selection_arr.push(constructCombatantSelection(a.id, a.name, "Creatures", a.grouptype, a.groupname)));
+	  const npc_selection_html = npc_selection_arr.join(" <br> ");
+	   
+	  npc_block_html = 
+	  `
+	  ${combatant_selection_npcs_header}
+		${npc_selection_html}
+		<br><br>
+	  `
+	  if(group_names.length > 1) {
+	    let group_name_selection_arr = [];
+			group_names.forEach(n => group_name_selection_arr.push(constructGroupingSelection(n, "Name")));
+      const group_name_selection_html = group_name_selection_arr.join(" <br> ");
+      
+      npc_group_name_block_html =
+      `
+      ${combatant_selection_group_name_header}
+			${group_name_selection_html}
+			<br><br>
+      `;
+	  }
+	  
+	  if(group_types.length > 1) {
+	    let group_type_selection_arr = [];
+			group_types.forEach(n => group_type_selection_arr.push(constructGroupingSelection(n, "Type")));
+      const group_type_selection_html = group_type_selection_arr.join(" <br> ");
+      
+      npc_group_type_block_html =
+      `
+      ${combatant_selection_group_type_header}
+			${group_type_selection_html}
+			<br><br>
+      `;
+	  }
+	}
+	
+  // set up a two-column body
+  // specific PC and NPC selection in left column.
+  // Groupings for NPCs in right column
+  const html =  
+  `
+  ${combatant_selection_header_script}
+  ${combatant_selection_header_style}
+  <body>
+    ${combatant_selection_intro}
+		<form>
+      ${combatant_selection_all}
+      <br><br>
+			<div class="row">
+				<div class="column">
+				
+				${pc_block_html}
+				${npc_block_html}
+				
+				</div>
+  
+				<div class="column">
+				
+				${npc_group_type_block_html}
+				${npc_group_name_block_html}
+  
+				</div>
+			</div>
+		</form>
+  </body>
+  ${script_html} 
+  `;
+  //console.log(html); 
+
+  return html;
+}
+
+
+const combatant_selection_header_script = 
+`
+<script src="https://code.jquery.com/jquery-3.4.1.js"   
+         integrity="sha256-WpOohJOqMqqyKL9FccASB9O0KwACQJpFTUBLTYOVvVU="   
+         crossorigin="anonymous"> </script>
+`;
+
+const combatant_selection_header_style =
+`
+<style>
+  .row {
+    display: flex;
+  }
+
+  .column {
+    flex: 50%;
+  }
+</style>
+`;
+
+const combatant_selection_all = 
+`
+<input type="checkbox" id="All" class="AllSelection"/>
+<label for="All"><strong> All </strong></label>  
+  
+&nbsp &nbsp <input type="reset" id="resetButton" class="resetButton">
+`;
+
+const combatant_selection_intro = 
+`
+<p>
+  <h3> Select Combatants</h3>
+  Select one or more of the following to set their initiative for this turn.
+  <br><em> Selecting more than one will set the same actions for all selected.</em>
+  <br>
+</p>
+`;
+
+const combatant_selection_pcs_header = 
+`
+<input type="checkbox" id="PCs" class="GroupSelection"/>
+<label for="PCs"><strong> PCs </strong></label>
+<hr width=100 align="left">
+`;
+
+const combatant_selection_npcs_header = 
+`
+<input type="checkbox" id="Creatures" class="GroupSelection"/>
+<label for="Creatures"><strong> Creatures / NPCs </strong></label>
+<hr width=100 align="left">
+`;
+
+// to line up the horizontal correctly, keep the checkbox but make invisible
+// checkbox for all creature types is redundant, and causes problems with active updating.
+const combatant_selection_group_name_header = 
+`
+<input type="checkbox" id="CreatureNames" class="GroupSelection" style="visibility:hidden"/>
+<label for="CreatureNames"><strong> Creature Names </strong></label>
+<hr width=150 align="left">
+`;
+
+const combatant_selection_group_type_header = 
+`
+<input type="checkbox" id="CreatureTypes" class="GroupSelection" style="visibility:hidden"/>
+<label for="CreatureTypes"><strong> Creature Types </strong></label>
+<hr width=150 align="left">
+`;
+
+
+
+function constructCombatantSelection(combatantID, combatantName, combatantGroup = "PCs", data_type = "", data_name = "") {
+  if("" != data_type) {
+    data_type = ` data-type="${data_type}"`
+  }
+  
+  if("" != data_name) {
+    data_name = ` data-name="${data_name}"`
+  }
+
+  const html =
+  `<input type="checkbox" id="${combatantID}" class="${combatantGroup}Selection"${data_type}${data_name}/>
+  <label for="${combatantID}">${combatantName}</label> 
+  `;
+  return html;
+}
+
+function constructGroupingSelection(label, type = "Name") {
+  const html = 
+  `
+  <input type="checkbox" id="${type}${label}" class="${type}Selection"/>
+  <label for="${type}${label}">${label}</label>
+  `;
+  
+  return html;
+}
+
+
+
+function constructSelectionScript(includePCs, includeCreatures, groupTypes, groupNames) {
+  let pc_js = "";
+  let pc_check_js = "";
+  let pc_uncheck_js = "";
+  
+  let creature_js = "";
+  let creature_check_js = "";
+  let creature_uncheck_js = "";
+  
+  var group_names_js = "";
+  let group_names_check_js = "";
+  let group_names_uncheck_js = "";
+  
+  var group_types_js = "";
+  let group_types_check_js = "";
+  let group_types_uncheck_js = "";
+  
+  let includeGroupTypes = groupTypes.length > 0;
+  let includeGroupNames = groupNames.length > 0;
+   
+  if(includePCs) {
+    pc_js = 
+    `  
+    $('#PCs').change( function() {
+    //console.log("PCs");
+    if($(this).is(':checked')) {
+      //console.log("\tchecked");
+      $('.PCsSelection').prop('checked', true);
+      
+    } else {
+      //console.log("\tunchecked");
+      $('.PCsSelection').prop('checked', false);
+    }
+    });
+    
+    `;
+    pc_check_js = `$('#PCs,.PCsSelection').prop('checked', true);`;
+    pc_uncheck_js = `$('#PCs,.PCsSelection').prop('checked', false);`;
+  }  
+  
+  if(includeGroupTypes) {
+    group_types_check_js = `$('.TypeSelection').prop('checked', true);`;
+    group_types_uncheck_js = `$('.TypeSelection').prop('checked', false);`;
+    
+    groupTypes.forEach( function(g) {
+      group_types_js = group_types_js + 
+      `
+			$('#Type${g}').change( function() {
+			//console.log("Type${g}");
+			if($(this).is(':checked')) {
+				//console.log("\tchecked");
+				$('*[data-type="${g}"]').prop('checked', true);
+			
+			} else {
+				//console.log("\tunchecked");
+				$('*[data-type="${g}"]').prop('checked', false);
+				$('#Creatures').prop('checked', false);
+			}
+			});
+      `;
+    });
+  }
+  
+  if(includeGroupNames) {
+    group_names_check_js = `$('.NameSelection').prop('checked', true);`;
+    group_names_uncheck_js = `$('.NameSelection').prop('checked', false);`;
+    
+		groupNames.forEach( function(g) {
+      group_names_js = group_names_js + 
+      `
+			$('#Name${g}').change( function() {
+			//console.log("Name${g}");
+			if($(this).is(':checked')) {
+				//console.log("\tchecked");
+				$('*[data-name="${g}"]').prop('checked', true);
+			
+			} else {
+				//console.log("\tunchecked");
+				$('*[data-name="${g}"]').prop('checked', false);
+				$('#Creatures').prop('checked', false);
+			}
+			});
+      `;
+    });
+  }
+  
+  if(includeCreatures) {
+    creature_check_js = `$('#Creatures, .CreaturesSelection').prop('checked', true);`;
+    creature_uncheck_js = `$('#Creatures, .CreaturesSelection').prop('checked', false);`;
+    creature_js =
+    `
+    $('#Creatures').change( function() {
+			//console.log("Creatures");
+			if($(this).is(':checked')) {
+				//console.log("\tchecked");
+				$('.CreaturesSelection').prop('checked', true);
+			  ${group_types_check_js}
+				${group_names_check_js}
+			
+			} else {
+				//console.log("\tunchecked");
+				$('.CreaturesSelection').prop('checked', false);
+				${group_types_uncheck_js}
+				${group_names_uncheck_js}
+			}
+    });
+    `;
+  }
+  
+  const all_js = 
+  `
+  $('#All').change( function() {
+    //console.log("All");
+    if($(this).is(':checked')) {
+      //console.log("\tchecked");
+      $('#PCs,.PCsSelection').prop('checked', true);
+      ${creature_check_js}
+      ${group_types_check_js}
+      ${group_names_check_js}
+    } else {
+      //console.log("\tunchecked");
+      $('#PCs,.PCsSelection').prop('checked', false);
+      ${creature_uncheck_js}
+      ${group_types_uncheck_js}
+      ${group_names_uncheck_js}     
+    }
+  });
+  `;
+
+	const html = 
+	`
+	 <script>
+	   ${all_js}
+	   ${pc_js}
+	   ${creature_js}
+	   ${group_names_js}
+	   ${group_types_js}	   
+	 </script>
+	`;
+  return html;
+}
+
+/*
+var html = constructSelectionScript(true, // includePCs
+	                                  true, // includeCreatures
+	                                  ["undead", "humanoid", "monstrosity"], 
+	                                  ["skeleton", "goblin"]);
+
+
+console.log(html);
+*/
+
+/*
+
+const PCs = [{ id:"1A1", name:"PC1",  players:[1,2,3]}, 
+             { id:"2B2", name: "PC2", players:[1,2,3]}];
+             
+const NPCs = [{ id:"3C3", name:"Bad Skeleton",  grouptype:"undead",      groupname:"Skeleton", players:[]},
+              { id:"4C4", name:"Good Skeleton", grouptype:"undead",      groupname:"Skeleton", players:[]},
+              { id:"5C5", name:"Big Dragon",    grouptype:"monstrosity", groupname:"Dragon",   players:[]}];
+//console.log(PCs.concat(NPCs));
+//const NPCmapping = NPCs.map(c => ({ id:c.id, name:c.name }));
+//console.log(NPCmapping);
+//const combatants = PCs.concat(NPCs);
+//const { playerCombatants, npcCombatants } = partitionCombatants(combatants);
+
+//console.log(combatants[0].players.length)
+//console.log(playerCombatants);
+//console.log(npcCombatants);
+
+const html = constructCombatantSelectionHTML(PCs.concat(NPCs));
+
+console.log(html);
+*/
+
+function dialogSelectionPromise(content) {
+  return new Promise((resolve, reject) => {
+    dialogSelectionCallback(content, (html) => resolve(html)); 
+  });
+}
+
+
+function dialogSelectionCallback(content, callbackFn) {
+	let d = new Dialog({
+		title: "Greyhawk Initiative",
+		content: content,
+		buttons: {
+			one: {
+				icon: '<i class="fas fa-check"></i>',
+				label: "Confirm",
+				callback: (html) => callbackFn(html)
+			},
+			two: {
+				icon: '<i class="fas fa-times"></i>',
+				label: "Cancel",
+				callback: () => callbackFn("Cancel")
+			}
+			},
+		default: "two",
+		close: () => callbackFn("Close")
+	});
+	d.render(true);
+}
+
+
+
+
+function getSelectionIDs(PCSelection, CreatureSelection) {
+  //console.log(PCSelection.length + " PC selection objects.");
+  //console.log(CreatureSelection.length + " NPC selection objects.");
+  
+  let ids = [];
+  
+  
+  PCSelection.each( function(index, element) {
+    //console.log("Value: " + element.value); // on
+    //console.log("Text: " + element.text); // undefined
+    //console.log("Id: " + element.id); // string of letters, numbers
+    //console.log("Checked: " + element.checked); // true or false
+  
+    if(element.checked) {
+      ids.push(element.id);
+    }
+  });
+
+  CreatureSelection.each( function(index, element) {
+    //console.log("Value: " + element.value); // on
+    //console.log("Text: " + element.text); // undefined
+    //console.log("Id: " + element.id); // string of letters, numbers
+    //console.log("Checked: " + element.checked); // true or false
+  
+    if(element.checked) {
+      ids.push(element.id);
+    }
+  });
+  
+  //console.log(ids.length + " ids checked: " + ids);
+
+  return(ids);
+}
+
+function combineElementsToSummaryString(names) {
+  // testing
+  //const names = ["Skeleton", "Skeleton", "Skeleton", "Bear", "PC", "Bear"];
+
+	let counts = {};
+	for (let i = 0; i < names.length; i++) {
+    counts[names[i]] = 1 + (counts[names[i]] || 0);
+	}
+	//console.log(counts);
+	//console.log(Object.keys(counts));
+	//console.log(Object.values(counts));
+
+	const keys = Object.keys(counts);
+	const values = Object.values(counts);
+
+	let names_string = [];
+	for(let i = 0; i < keys.length; i++) {
+		const c = values[i];
+		let str = keys[i];
+	
+		if(c > 1) {
+			str += " (x" + c + ")";    
+		}
+		names_string.push(str);
+	}
+	
+	const joined_str = names_string.join(", ");
+	//console.log(names_string);
+	//console.log(joined_str);
+	return joined_str;
+}
+
+
+function constructDialogInitiativeActionsContent(names = "") {
+  names = combineElementsToSummaryString(names);
+
+  const dialogInitiativeActionsContent = 
+`
+<h3> Greyhawk Initiative </h3> 
+<p>Please select one or more actions for:</p>
+<p><em> ${names} </em></p>
+<form>
+  <table>
+    <thead>
+         <tr>
+            <th style="text-align:left">Action</th>
+            <th colspan=2 style="text-align:right">Bonus Action</th>
+         </tr>
+      
+         <tr>
+           <td> </td>
+           <td style="text-align:right"> <label for="None">None</label></td>
+           <td> <input type="radio" name="BonusAction" id="BonusNone" class="ActionSelection" checked/></td>
+         </tr>
+      
+         <tr>
+           <td> <input type="checkbox" id="RangedAttack" class="ActionSelection"/></td>
+           <td> <label for="RangedAttack">Ranged attack (d4)</label></td>
+           <td> <input type="radio" name="BonusAction" id="BonusRangedAttack" class="ActionSelection"/></td>
+         </tr>
+         
+         <tr>
+            <td> <input type="checkbox" id="Movement" class="ActionSelection"/></td>
+            <td> <label for="Movement">Movement (d6)</label></td>
+            <td> <input type="radio" name="BonusAction" id="BonusMovement"act class="ActionSelection"/></td>
+         </tr>
+    
+         <tr>
+            <td> <input type="checkbox" id="SwapGear" class="ActionSelection"/></td>
+            <td> <label for="SwapGear">Swap Gear (d6)</label></td>
+            <td> <input type="radio" name="BonusAction" id="BonusSwapGear"act class="ActionSelection"/></td>
+         </tr>
+        
+         <tr>
+            <td> <input type="checkbox" id="OtherAction" class="ActionSelection"/></td>
+            <td> <label for="OtherAction">Other Action (d6)</label></td>
+            <td> <input type="radio" name="BonusAction" id="BonusOtherAction"act class="ActionSelection"/></td>
+         </tr>
+      
+         <tr>
+            <td> <input type="checkbox" id="MeleeAttack" class="ActionSelection"/></td>
+            <td> <label for="MeleeAttack">Melee attack (d8)</label></td>
+            <td> <input type="radio" name="BonusAction" id="BonusMeleeAttack"act class="ActionSelection"/></td>
+         </tr>
+    
+         <tr>
+            <td> <input type="checkbox" id="CastSpell" class="ActionSelection"/></td>
+            <td> <label for="CastSpell">Cast Spell (d10)</label></td>
+            <td> <input type="radio" name="BonusAction" id="BonusCastSpell"act class="ActionSelection"/></td>
+         </tr>
+      
+         <tr>
+           <td> <input type="checkbox" id="Other" class="ActionSelection"/> </td>
+           <td colspan=2> <label for="Other">Other</label> <input type="text" id="OtherText"/></td>
+           
+         </tr>
+      
+
+        
+      </table> 
+  
+
+  
+  <br><input type="checkbox" id="InitiativeBonus" class="ActionSelection"/>
+  <label for="InitiativeBonus">Initiative Bonus</label>
+  <input type="number" id="InitiativeBonusNumber" min=0 max=99 step=1 value=1>
+ 
+  <br><input type="checkbox" id="InitiativePenalty" class="ActionSelection"/>
+  <label for="InitiativePenalty">Initiative Penalty</label>
+  <input type="number" id="InitiativePenaltyNumber" min=0 max=99 step=1 value=1>  
+  
+  <br><input type="checkbox" id="Surprise" class="ActionSelection"/>
+  <label for="Surprise">Surprise</label>
+  <input type="number" id="SupriseNumber" min=0 max=99 step=1 value=10>
+
+  <br>
+  
+  <br><input type="radio" id="Normal" name="AdvDis" class="ActionSelection" Checked/>
+  <label for="Normal">Normal</label> 
+  <input type="radio" id="Advantage" name="AdvDis" class="ActionSelection"/>
+  <label for="Advantage">Advantage</label> 
+  <input type="radio" id="Disadvantage" name="AdvDis" class="ActionSelection"/>
+  <label for="Disadvantage">Disadvantage</label> 
+    
+  <br>
+    
+  <br><input type="reset" id="resetButton" class="resetButton">
+    </form>
+    
+  <p>
+    <em>Initiative bonus/penalty steps largest die down/up, respectively.</em>
+    <br><br>
+    <em>Advantage/disadvantage causes the largest die to be rolled with disadvantage/advantage, respectively. 
+      
+    <br><br>
+    <em>
+    <b>Multiple Actions.</b> 
+    If an effect grants you	an additional action without the use of a bonus action, 
+    you roll an initiative	die	for	only one of	your actions. 
+    Use the largest die that corresponds to any one of the actions you plan to take.
+    </em>  
+  </p>
+  
+`
+  return dialogInitiativeActionsContent;
+
+}
+
+
+
+
+  
+function constructInitiativeRoll(actionSelections, otherText, initBonus = 1, initPenalty = 1, surprise = 10) {
+  //console.log("actionSelections.Length: " + actionSelections.length);
+  //console.log("actionSelections (0): " + actionSelections[0].id + " " + actionSelections[0].checked);
+  //console.log("actionSelections (1): " + actionSelections[1].id + " " + actionSelections[1].checked);
+  
+  //console.log("Other text: " + otherText);
+  //console.log("initBonus: " + initBonus);
+  //console.log("initPenalty: " + initPenalty);
+  //console.log("surprise: " + surprise);
+  
+  var actionPool = [];
+  for(var i = 0; i < actionSelections.length; i++) {
+    //console.log("\t selection id: " + actionSelections[i].id);
+    //console.log("\t selection is checked: " + actionSelections[i].checked);
+    if(actionSelections[i].checked) {
+      //console.log("\tAdding " + actionSelections[i].id)
+      actionPool.push(actionSelections[i].id);
+    }
+  }
+  
+  //console.log("actionPool: " + actionPool);
+  
+  let dice = calculateDice(actionPool, otherText, initBonus, initPenalty, surprise);
+  let init_roll = constructInitiativeRollCommand(dice); 
+  
+  const action_str = TranslateActionPoolSelections(actionPool, otherText, initBonus, initPenalty, surprise);
+  //console.log(action_str);
+  
+  return { init_roll, action_str };
+}
+
+async function doInitiative(ids, init_roll, actions = "") {
+  //console.log("Rolling " + init_roll + " for " + ids);
+  const message_options = {
+    flavor: "Greyhawk Initiative Roll.<br>" + actions
+  };
+  
+  await game.combat.rollInitiative(ids, init_roll, message_options);
+  //console.log("Done " + id);
+}
+
+function constructInitiativeRollCommand(dice) {
+	var commandStringArray = [];
+	dice.forEach( function(die) { 
+		commandStringArray.push(die.printCommand());
+	});
+
+	let command_string = commandStringArray.join("");
+	command_string = command_string.replace(/^[+]/, ""); // replace any starting "+"" 
+
+	return command_string;
+}
+
+function calculateDice(actionPool, other_text = "", initBonus = 1, initPenalty = 1, surprise = 10) {
+	//console.log("CalculateDice");
+
+	var die_strings = [];
+	var initiative_bonus = false;
+	var initiative_penalty = false;
+	var advantage_type = "normal";
+	actionPool.forEach( function(action) {
+	  switch(action) {
+		case 'RangedAttack':
+		case 'BonusRangedAttack':  
+		  die_strings.push("1d4");
+		  break;
+	  
+		case 'Movement':
+		case 'BonusMovement':  
+		case 'SwapGear':
+		case 'BonusSwapGear':
+		case 'OtherAction':
+		case 'BonusOtherAction':  
+		  die_strings.push("1d6");
+		  break;
+	
+		case 'MeleeAttack':
+		case 'BonusMeleeAttack':  
+		  die_strings.push("1d8");
+		  break; 
+	  
+		case 'CastSpell':
+		case 'BonusCastSpell':  
+		  die_strings.push("1d10");
+		  break; 
+	  
+		case 'Other':     
+		  die_strings.push( other_text );     
+		  break;   
+	  
+		case 'Surprise':
+		  surprise = parseInt( surprise );
+		  die_strings.push( surprise );
+		  break;
+		case 'InitiativeBonus':
+		  initiative_bonus = true;
+		  initBonus = parseInt( initBonus );
+		  break;
+		case 'InitiativePenalty':
+		  initiative_penalty = true;
+		  initPenalty = parseInt( initPenalty );
+		  break;   
+	  
+		case 'Advantage':
+		  advantage_type = "advantage";
+		  break;
+		case 'Disadvantage':
+		  advantage_type = "disadvantage";
+		  break;
+	
+		default:
+	  }
+  
+	}); 
+   
+	//console.log("\tDie strings: " + die_strings);
+	var dice = createDiceArray(die_strings);
+
+	if(initiative_bonus) {
+	  // find the highest die; step side down by one increment (-2 sides) for each bonus
+	  const largest_index = largestDie(dice);
+	  console.log("Applying +" + initBonus + " initiative bonus to die " + dice[largest_index].original_string);
+  
+	  for(var i=0; i < initBonus; i++) {
+			dice[largest_index].decreaseSides();
+	  }
+	  console.log("Resulting die sides: " + dice[largest_index].sides);
+	}
+
+	if(initiative_penalty) {
+	  // find the smallest die; step side up by one increment (+2 sides) for each penalty
+	  const smallest_index = smallestDie(dice);
+	  console.log("Applying -" + initPenalty + " initiative penalty to die " + dice[smallest_index].original_string);
+	  
+	  for(var i=0; i < initPenalty; i++) {
+			dice[smallest_index].increaseSides();
+	  }
+	  console.log("Resulting die sides: " + dice[smallest_index].sides);
+	}
+
+	if(advantage_type === "advantage") {
+	  // find the highest die, roll with disadvantage in order to keep lowest
+	  const largest_index = largestDie(dice);
+	  dice[largest_index].disadvantage();
+	}
+
+	if(advantage_type == "disadvantage") {
+	  // find the highest die, roll with advantage in order to keep highest
+	  const largest_index = largestDie(dice);
+	  dice[largest_index].advantage();
+	}
+
+	return dice;
+}
+
+function TranslateActionPoolSelections(actionPool, other_text = "", initBonus = 1, initPenalty = 1, surprise = 10) {
+  let str_array = [];
+
+	actionPool.forEach( function(action) {
+	   switch(action) {
+		case 'RangedAttack':
+		  str_array.push("Ranged Attack (d4)");
+		  break;
+		case 'BonusRangedAttack':  
+		  str_array.push("Bonus: Ranged Attack (d4)");
+		  break;
+		case 'Movement':
+		  str_array.push("Movement (d6)");
+		  break;
+		case 'BonusMovement':  
+		  str_array.push("Bonus: Movement (d6)");
+		  break;
+		case 'SwapGear':
+		  str_array.push("Swap Gear (d6)");
+		  break;
+		case 'BonusSwapGear':
+		  str_array.push("Bonus: Swap Gear (d6)");
+		  break;
+		case 'OtherAction':
+		  str_array.push("Other Action (d6)" );
+		  break;
+		case 'MeleeAttack':
+		  str_array.push("Melee Attack (d8)");	
+		  break;
+		case 'BonusMeleeAttack':  
+		  str_array.push("Bonus: Melee Attack (d8)");
+		  break;
+	  
+		case 'CastSpell':
+		  str_array.push("Cast Spell (d10)");
+		  break;
+		case 'BonusCastSpell':  
+		  str_array.push("Bonus: Cast Spell (d10)");
+		  break; 
+	  
+		case 'Other':    
+		  str_array.push("Other: " + other_text);
+		  break;
+	  
+		case 'Surprise':
+		  str_array.push("Surprise (+" + surprise + ")");
+		  break;
+		case 'InitiativeBonus':
+		  str_array.push("Initiative Bonus (+" + initBonus + ")");
+		  break;
+		case 'InitiativePenalty':
+		  str_array.push("Initiative Penalty (-" + initPenalty + ")");
+		  break;   
+	  
+		case 'Advantage':
+		  str_array.push("Advantage (lowest roll for largest die)");
+		  break;
+		case 'Disadvantage':
+		  str_array.push("Disadvantage (highest roll for largest die)");
+		  break;
+	
+		default:
+	  }
+	}); 
+	  
+	const str = "<ul><li>" + str_array.join("</li><li>") + "</ul>";  
+	  
+  return str;
+	  
+}
+  
+  
+function createDiceArray(diceStrings) {
+  var dieStringArray = [];
+  var dice = [];
+  
+  diceStrings.forEach( function(dieString, index) {
+    if(!isBlank(dieString)) {
+      const die_commands = splitDieCommand(dieString);
+      die_commands.forEach( function(cmd, index) {
+        dieStringArray.push(cmd); 
+      });
+    }
+  });
+  
+  dieStringArray.forEach( function(dieString, index) {  
+    dice.push(parseDieString(dieString));
+  });
+  
+  return dice;
+}
+  
+function isBlank(str) {
+    // https://stackoverflow.com/questions/154059/how-can-i-check-for-an-empty-undefined-null-string-in-javascript
+    const is_blank = (!str || /^\s*$/.test(str));
+    //console.log("isBlank? " + is_blank);
+    return is_blank;
+  }
+  
+  
+function parseDieString(die_string) {
+  // Die Rolls have number, side, remainder, and a modifier
+  // e.g., 2d4, -3d6, 20d4 + 10  
+  //console.log("parseDieString: " + die_string);
+  
+	if(isBlank(die_string)) {
+		//console.log("\tDie is blank or null.");
+		return die_string;
+	}
+
+	let res = die_string.toString().match(/^([+-])?(\d+)d(\d+)(.*)/i);
+	if(null === res) {
+		//console.log("\tDie pattern not matched. Trying integers.");
+		res = die_string.toString().match(/^([+-])?(\d+)(.*)/i);
+		if(null === res) {
+			//console.log("\tDie pattern not matched.");
+			return die_string;
+		}
+		// matched digits, like 10, or -20, or 10 + 1d6 + 2d4
+	}
+  
+  //console.log("\tMatch results: " + res);
+  //console.log("\tResults length: " + res.length);
+  
+  // 0: full string
+  // 1: + or - (could be null)
+  // 2: number
+  // 3: sides or remainder if not a "d" pattern
+  // 4: remainder for "d" pattern only
+  if(4 == res.length) {
+    // not "d" pattern
+    let die_roll = new DieRoll(res[2],
+                               1,
+                               res[3],
+                               res[1],
+                               res[0]);
+    
+    return die_roll;
+    
+  } else if(5 === res.length) {
+    // "d" pattern
+    let die_roll = new DieRoll(res[2],
+                               res[3],
+                               res[4],
+                               res[1],
+                               res[0]);
+    
+    return die_roll;
+  }
+  
+  //console.log("\tMatch returned unexpected result.");
+  return die_string;
+}
+  
+
+
+function DieRoll(number, sides, remainder = "", modifier = "+", original_str = "") {
+  this.number = parseInt( number );
+  this.sides = parseInt( sides );
+  this.remainder = remainder;
+  this.modifier = modifier;
+  this.original_string = original_str;
+  
+  this.advantage_type = "normal";
+}
+  
+DieRoll.prototype.decreaseSides = function() {
+  console.log("decreaseSides");
+  var self = this;
+  console.log("Self sides: " + this.sides);
+  this.sides = modifySides(self.sides, "decrease");
+  console.log("Self sides: " + this.sides);
+}
+
+DieRoll.prototype.increaseSides = function() {
+  console.log("increaseSides");
+  var self = this;
+  console.log("Self sides: " + this.sides);
+  this.sides = modifySides(self.sides, "increase");
+  console.log("Self sides: " + this.sides);
+}
+
+DieRoll.prototype.advantage = function() {
+  if("advantage" === this.advantage_type) {
+      return;
+  }
+   
+  if("disadvantage" === this.advantage_type) {
+    this.remainder = this.remainder.replace(/^kl\d+/, "");
+    this.number = this.number / 2;
+    this.advantage_type = "normal";
+  }
+    
+  this.remainder = "kh" + this.number.toString();
+  this.number = this.number * 2;  
+  this.advantage_type = "advantage";
+}
+
+
+
+DieRoll.prototype.disadvantage = function() {
+  if("disadvantage" === this.advantage_type) {
+      return;
+  }
+   
+  if("advantage" === this.advantage_type) {
+    this.remainder = this.remainder.replace(/^kh\d+/, "");
+    this.number = this.number / 2;
+    this.advantage_type = "normal";
+  }
+    
+  this.remainder = "kl" + this.number.toString();
+  this.number = this.number * 2;  
+  this.advantage_type = "disadvantage";
+}
+
+DieRoll.prototype.normalize = function() {
+  if("normal" === this.advantage_type) {
+    return;
+  }
+
+  if("advantage" === this.advantage_type) {
+    this.remainder = this.remainder.replace(/^kh\d+/, "");    
+  }
+  
+  if("disadvantage" === this.advantage_type) {
+    this.remainder = this.remainder.replace(/^kl\d+/, "");
+  }
+  
+  this.number = ( this.number / 2 );
+  this.advantage_type = "normal";
+}
+
+DieRoll.prototype.printCommand = function() {
+  let command_string = "";
+  command_string = this.modifier + this.number.toString();
+  
+  if(1 == this.sides) {
+    command_string += this.remainder;
+  } else {
+    command_string +=  "d" + this.sides.toString() + this.remainder;
+  }
+  
+  return command_string;
+
+}
+
+
+function modifySides(current_sides, how = "increase") {
+  // increase or decrease by 2, as d4 through d12 use 2. 
+  // for consistency, allow die in-between d12 and d20, and simply increase by 2 otherwise.
+  //console.log("modifySides: " + current_sides);
+  console.log("modifySides");
+  current_sides = parseInt( current_sides );
+  console.log("Current sides: " + current_sides);
+  
+  if("increase" === how) {
+    if(current_sides <= 1) {
+      return 2;
+    }
+  
+    return current_sides + 2;
+  } else if("decrease" == how) {
+    if(current_sides <= 2) {
+      return 1;
+    }
+    
+    return current_sides - 2;
+  }
+  
+  //console.log("modifySides: 'how' not recognized.");
+  return current_sides;
+ 
+}
+
+function findDie(dice, type = "max") {
+  var match_sides = null;
+  var match_index;
+  
+  dice.forEach( function(die, index) {
+    if(null == match_sides || ("max" == type && die.sides > match_sides) || ("min" == type && die.sides < match_sides)) {
+      match_sides = die.sides;
+      match_index = index;
+    }
+  });
+
+  return match_index;
+}
+
+function largestDie(dice) {
+  //console.log("largestDie");
+  const index = findDie(dice, "max");
+  //console.log("Largest die: " + dice[index].die_str + " with " + dice[index].sides + " sides at index " + index);
+  return index;  
+}
+  
+
+function smallestDie(dice) {
+  //console.log("largestDie");
+  const index = findDie(dice, "min");
+  //console.log("Largest die: " + dice[index].die_str + " with " + dice[index].sides + " sides at index " + index);
+  return index;  
+}
+
+
+  
+
+function splitDieCommand(die_string) {
+	//console.log("splitDieCommand: " + die_string);
+	if(isBlank(die_string)) {
+		return null;
+	}
+
+  // check for combined commands, such as 1d6 + 2d4 + 20; split
+  die_string = die_string.toString().replace(/ /g, "");
+  die_string = die_string.split("+");
+    
+  if("" === die_string[0]) {
+    die_string.shift();
+  }
+  
+  var dieArray = [];
+  
+  die_string.forEach( function(die_str, index) {
+    let minus_str = die_str.split("-");
+    //console.log("\tminus_str: " + minus_str);
+    
+    let first_is_negative = false;
+    
+    if("" === minus_str[0]) {
+      minus_str.shift();
+      first_is_negative = true;
+    }
+    
+    let die_to_add = minus_str.shift();
+    if(first_is_negative) {
+      die_to_add = "-" + die_to_add;
+      
+    } 
+    dieArray.push(die_to_add);
+    
+    if(minus_str.length >  0) {
+      // rest are negative
+      minus_str.forEach( function(minus_s, index) {
+        dieArray.push("-" + minus_s);
+      });
+    }   
+  
+  });
+  
+  return dieArray;
+}
+
+function dialogInitiativeActionsPromise(content) {
+  return new Promise((resolve, reject) => {
+    dialogInitiativeActionsCallback(content, (html) => resolve(html)); 
+  });
+}
+
+
+function dialogInitiativeActionsCallback(content, callbackFn) {
+	let d = new Dialog({
+		title: "Greyhawk Initiative",
+		content: content,
+		buttons: {
+			one: {
+				icon: '<i class="fas fa-check"></i>',
+				label: "Confirm",
+				callback: (html) => callbackFn(html)
+			},
+			two: {
+				icon: '<i class="fas fa-times"></i>',
+				label: "Cancel",
+				callback: () => callbackFn("Cancel")
+			}
+			},
+		default: "two",
+		close: () => callbackFn("Close")
+	});
+	d.render(true);
+}
+
+
+
+
+// Preliminary checks 
+// ------------------
+let errorReason = '';
+let combatants = game.combat.combatants;
+
+if(combatants.length < 1) {
+  errorReason = `${errorNoCombatants}`;
+}
+
+if(errorReason === '') {
+  //console.log(combatants.length + " combatants total.");
+	combatants = combatants.filter(c => c.owner);
+	if(combatants.length < 1) {
+	  errorReason = `${errorNoCombatantsOwned}`;
+	}
+}
+
+// Main
+// ----
+if(errorReason === '') {
+  // do stuff
+  //console.log(combatants.length + " combatants owned.");
+ 
+} else {
+  //console.log(`Error: ${errorReason}`);
+  ui.notifications.error(`${errorReason}`);
+}
+
+
+
+
+let selected_combatants = filterSelectedCombatants(combatants);
+if(selected_combatants.length < 1) {
+  //console.log("No selected combatants in combat.");
+  // use combatants controlled by user instead
+  selected_combatants = combatants;  
+}
+//console.log(selected_combatants.length + " combatants selected/owned.");
+
+
+let ids = [];
+if(selected_combatants.length == 1) {
+  //console.log("Single combatant found.")
+  ids = selected_combatants._id;
+} else {
+  // list by PC / NPC. Groups: type, name. 
+  const combatant_selection_html = constructCombatantSelectionHTML(combatants);
+  //let PCSelection = [];
+  //let CreatureSelection = [];
+  // console.log(combatant_selection_html);
+    
+  let res = await dialogSelectionPromise(combatant_selection_html);
+  //console.log(res);
+  if("Cancel" === res) {
+    //console.log("User cancelled.");
+    return;
+  } else if("Closed" == res) {
+    //console.log("User closed");
+    return;
+  } else {
+		const PCSelection = (res.find('[class=PCsSelection]'));
+		const CreatureSelection = (res.find('[class=CreaturesSelection]'));
+		ids = getSelectionIDs(PCSelection, CreatureSelection);
+		selected_combatants = selected_combatants.filter(c => (ids.includes(c._id) ));
+  }
+  
+}
+
+
+// console.log(combatants[0]); 
+
+//console.log(ids);
+if(ids.length < 1) {
+  //console.log("No combatants selected.");
+  return;
+}
+
+
+const combatant_names = selected_combatants.map(c => c.name);
+//console.log("Combatant names: " + combatant_names);
+
+const initiative_dialog_content = constructDialogInitiativeActionsContent(combatant_names);
+
+let res = await dialogInitiativeActionsPromise(initiative_dialog_content);
+
+
+let actionSelections = (res.find('[class=ActionSelection]'));
+let otherText = res.find('[id=OtherText]')[0].value;
+let initBonus = res.find('[id=InitiativeBonusNumber]')[0].value;
+let initPenalty = res.find('[id=InitiativePenaltyNumber]')[0].value;
+let surprise = res.find('[id=SupriseNumber]')[0].value;
+const { init_roll, action_str } = constructInitiativeRoll(actionSelections, otherText, initBonus, initPenalty, surprise);
+
+//console.log(action_str);
+
+
+//console.log("Rolling " + init_roll);
+doInitiative(ids, init_roll, action_str);
+//console.log("Done!");
+
+
+
+
+
+

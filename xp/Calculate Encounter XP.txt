@@ -1,0 +1,262 @@
+// Calculate Encounter XP by adding up all the creatures on the map
+
+// Gather tokens in the current scene into an array.
+// let tokens = canvas.tokens.placeables.filter((token) => token.data);
+
+let tokens = getEnemyActors();
+
+
+//console.log(tokens[0].data);
+
+// From the tokens array sort into PC and NPC arrays.
+/*
+for (let count of tokens) {
+  let tokenType = count.data.type;
+  let tokenName = count.data.name;
+  let tokenXP = count.data.data.details.xp.value;
+  
+  console.log(tokenType + tokenName + tokenPassive);
+  
+  //if(tokenType === "character") {
+  //  pcArray.push({ name: tokenName, passive: tokenPassive });
+  //} 
+  if(tokenType === "npc") {
+    npcArray.push({ name: tokenName, XP: tokenXP });
+  }
+}
+*/
+
+function getEnemyActors() {
+  // Prioritize selected hostile enemies
+  const controlledEnemyActors = canvas.tokens.controlled
+    .filter((ec) => ec.actor.isPC === false && ec.data.disposition === -1)
+    .map((a) => a.actor);
+
+  if (controlledEnemyActors.length > 0) {
+    return controlledEnemyActors;
+  }
+
+  // If none are selected, use all the enemies in the scene that are hostile
+  return canvas.tokens.children[0].children
+    .filter((ec) => ec.actor.isPC === false && ec.data.disposition === -1)
+    .map((a) => a.actor);
+}
+
+let dialogHeader = 
+`
+ <script  src="https://code.jquery.com/jquery-3.4.1.js"   integrity="sha256-WpOohJOqMqqyKL9FccASB9O0KwACQJpFTUBLTYOVvVU="   crossorigin="anonymous"></script>
+`;
+
+let dialogStyle = 
+`
+<style>
+form {
+width:100%;
+height:450px;
+margin:auto;
+position:relative;
+}
+ input {
+width:100%;
+height: 25px;
+ }
+</style> 
+`;
+
+let dialogIntro = 
+`
+<p>Select the button to include/omit creature from xp. Use a positive or negative integer if XP for the creature should be increased or decreased, respectively.</p>
+`;
+
+
+
+let tableHead = 
+`
+<form id="xp_form">
+<table id='worksheet_table' class="table table-striped">
+            <thead>
+              <tr>
+                <th>Use</th>
+                <th>Creature</th>
+                <th>XP</th>
+                <th>Adjustment</th>
+                <th>Total XP</th>
+                
+              </tr>
+            </thead>
+            <tbody>
+`;
+
+let tableRows = ``;
+let totalXP = 0;
+tokens.forEach(actor => {
+  const xp = parseInt( actor.data.data.details.xp.value )||0;
+
+  
+  let tableRow = 
+`
+  <tr class="character-row">
+                <td> <input type="checkbox" id="useCreature" name="useCreature" class="useCreature" value="1" Checked></td>
+                <td id="creature" name="creature" class="creature">${actor.data.name}</td>
+                <td id="creatureXP" name="creatureXP" class="creatureXP">${xp}</td>
+                <td> <input type="number" name="adjustment" id="adjustment" class="adjustment" value=0 /></td>
+                <td id="creatureTotalXP" name="creatureTotalXP" class="creatureTotalXP">${xp}</td>               
+              </tr>
+`;
+  tableRows += tableRow;
+  totalXP += xp;
+});
+
+
+let tableEnd = 
+`
+              <tr>
+                <td colspan="4" id="character" name="blank" style="border-top:4px double; padding-top:1em">Total Encounter Experience</td>
+                <td name="totalEncounterXP" id="totalEncounterXP" class="totalEncounterXP" style="border-top:4px double; padding-top:1em">${totalXP}</td>
+                
+              </tr>
+         
+            </tbody>
+  
+          </table>
+   <input type="reset" id="resetButton" class="resetButton">
+</form>
+`;
+
+let dialogTable = tableHead + tableRows + tableEnd;             
+              
+let dialogScript = 
+`
+<script>
+  
+function recalculate() {
+  //console.log("recalculate");
+  
+  var useCreatureArray = [];
+  var creatureXPArray = [];
+  var adjustmentArray = [];
+                                           
+  $('.useCreature').each( function(index, element) {
+    var useCreatureVal = $(this).is(':checked');
+    useCreatureArray.push( useCreatureVal );
+  });
+  //console.log("use Creature: " + useCreatureArray);
+  
+  $('.creatureXP').each( function(index, element) {
+    var creatureXPVal = parseInt( $(this).text() )||0;
+    creatureXPArray.push( creatureXPVal );
+  });
+  //console.log("Creature XP: " + creatureXPArray);
+  
+  $('.adjustment').each( function(index, element) {
+    var adjustmentVal = parseInt( $(this).val() )||0;
+    adjustmentArray.push( adjustmentVal );
+  });
+  //console.log("Adjustment: " + adjustmentArray);
+    
+  var totalEncounterXP = 0;
+  $('.creatureTotalXP').each( function(index, element) {
+    var totalCreatureVal = useCreatureArray[index] * (creatureXPArray[index] + adjustmentArray[index]);
+    $(this).text(totalCreatureVal);
+    totalEncounterXP += totalCreatureVal;   
+  });
+  //console.log("totalEncounterXP: " + totalEncounterXP);
+  
+  $('.totalEncounterXP').text(totalEncounterXP);
+      
+}
+ 
+$('.adjustment').keyup(function() {
+  //console.log("adjustment change");
+  var adjustment = parseInt( $(this).val() );
+  //console.log("\tadjustment: " + adjustment);
+  
+  // if checked, add to total xp
+  var currentRow = $(this).parents('tr');
+ 
+  var useCreature = currentRow.find('.useCreature').is(':checked');
+  
+  if(useCreature) {    
+    var creatureXP = parseInt( currentRow.find('.creatureXP').text() )||0;
+    var newCreatureXP = (creatureXP + adjustment) * useCreature;
+  
+    currentRow.find('.creatureTotalXP').text(newCreatureXP);
+    //console.log("\tNewCreatureXP: " + newCreatureXP);
+    
+    // adjust total for the encounter
+    // cannot simply adjust total by adjustment, b/c we don't know what the original adjustment was.
+    recalculate();
+  }
+  
+ 
+});
+
+
+$('.useCreature').change(function() {
+  var currentRow = $(this).parents('tr');
+  var currentTbl = currentRow.parent();     
+  
+  var useCreature = $(this).is(':checked');
+  //console.log("\tuseCreature: " + useCreature); 
+  
+  var creatureXP = parseInt( currentRow.find('.creatureXP').text() )||0;
+  var creatureAdj = parseInt( currentRow.find('.adjustment').val() )||0;
+  var totalEncounterXP = parseInt( currentTbl.find('.totalEncounterXP').text() )||0;
+  
+  if(useCreature) {
+    
+    //console.log("\tCreature XP: " + creatureXP + " Adjustment: " + creatureAdj);
+    
+    currentRow.find('.creatureTotalXP').text(creatureXP + creatureAdj);
+    
+    // adjust total for the now-added creature
+    currentTbl.find('.totalEncounterXP').text(totalEncounterXP + creatureXP + creatureAdj);
+    
+    
+  } else {
+    // set total to 0
+    //console.log("\tSetting total XP to 0.");
+    currentRow.find('.creatureTotalXP').text(0);
+    
+    // adjust total for the now-missing creature
+    currentTbl.find('.totalEncounterXP').text(totalEncounterXP - creatureXP - creatureAdj);
+  }
+});
+  
+$('.resetButton').click(function(e) {
+  //console.log("Reset");
+  e.preventDefault();
+  $('#xp_form')[0].reset();  // https://stackoverflow.com/questions/32062897/why-do-i-need-to-click-reset-button-twice-before-the-jqueries-in-it-is-triggered
+  recalculate();
+});  
+  
+</script>
+
+`;
+
+let dialogContent = dialogHeader + dialogStyle + dialogIntro + dialogTable + dialogScript;
+
+console.log(dialogContent);
+
+new Dialog({
+    title: "Sum Encounter XP",
+    content: dialogContent,
+    buttons: {
+      one: {
+        icon: '<i class="fas fa-times"></i>',
+        label: "Done",
+      }
+    },
+    default: "Done"
+  }).render(true);
+              
+
+  
+
+
+  
+  
+  
+  
+  
+  
