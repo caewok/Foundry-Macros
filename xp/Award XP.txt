@@ -1,3 +1,10 @@
+// ----------------------------------------------
+// AWARD XP
+// ----------------------------------------------
+// Select one or more characters. If no characters are selected, the macro will use all PCs.
+// The dialog permits you to enter total xp or individual xps and vary the weights. 
+// On confirmation, the macro applies the xp to each character and outputs a summary to a chat message.
+
 // getting all actors of selected tokens
 let actors = canvas.tokens.controlled.map(({ actor }) => actor);
 
@@ -6,15 +13,20 @@ if (actors.length < 1) {
   actors = game.actors.entities.filter(e => e.data.type === 'character' && e.isPC);
 }
 
-console.log("Actors: " + actors.length);
+//console.log("Actors: " + actors.length);
 
 
-let dialogHeader = 
+// ----------------------------------------------
+// Constructing the dialog content piecemeal
+
+// JQuery
+const dialogHeader = 
 `
  <script  src="https://code.jquery.com/jquery-3.4.1.js"   integrity="sha256-WpOohJOqMqqyKL9FccASB9O0KwACQJpFTUBLTYOVvVU="   crossorigin="anonymous"></script>
 `;
 
-let dialogStyle = 
+// CSS
+const dialogStyle = 
 `
 <style>
 form {
@@ -30,23 +42,21 @@ height: 25px;
 </style> 
 `;
 
-let dialogIntro = 
+// Intro paragraph
+const dialogIntro = 
 `
 <p>Change one or more values in the table and the others should adjust automatically. Ratio defines how the Total Encounter XP is divided among the characters.</p>
 `;
 
-
-
-
-
+// List each actor name in a table, with current XP and inputs for added XP.
 let tableRows = ``;
 actors.forEach(actor => {
- console.log("\t" + actor.name + " " + actor.data.data.details.xp.value + " XP");
+ //console.log("\t" + actor.name + " " + actor.data.data.details.xp.value + " XP");
  
- let actorXP = parseInt(actor.data.data.details.xp.value);
- let actorTotalXP = actorXP + 100;
+ const actorXP = parseInt(actor.data.data.details.xp.value);
+ const actorTotalXP = actorXP + 100;
  
- let tableRow = 
+ const tableRow = 
  ` 
    <tr class="character-row">
                 <td id="character" name="character" class="character">${actor.name}</td>
@@ -60,7 +70,8 @@ actors.forEach(actor => {
   tableRows += tableRow;
 }) 
 
-let tableHead = 
+// Header for the table of actors.
+const tableHead = 
 `
 <table id='worksheet_table' class="table table-striped">
             <thead>
@@ -76,9 +87,9 @@ let tableHead =
             <tbody>
 `
 
-
-let totalEncounterXPValue = 100 * actors.length;
-let tableEnd = 
+// Add entry at the bottom for the total XP for the encounter
+const totalEncounterXPValue = 100 * actors.length;
+const tableEnd = 
 `
  <tr>
                 <td colspan="3" id="character" name="blank">Total Encounter Experience</td>
@@ -90,13 +101,10 @@ let tableEnd =
           </table>
 `
 
+const dialogTable = tableHead + tableRows + tableEnd;
 
-
-
-let dialogTable = tableHead + tableRows + tableEnd;
-
-
-let dialogScript = 
+// JQuery script for live updating of table calculations.
+const dialogScript = 
 `
 <script>
   $('table tbody tr').find('.encounterXP').on('keyup',function() {
@@ -244,13 +252,19 @@ let dialogScript =
 
 `;
 
-let dialogContent = dialogHeader + dialogStyle + dialogIntro + dialogTable + dialogScript;
+// Combine the above parts to create the full dialog
+const dialogContent = dialogHeader + dialogStyle + dialogIntro + dialogTable + dialogScript;
 
+/**
+ * Award XP to a set of actors
+ * @totalAmount The total XP to be awarded. Only needed for the chat content.
+ * @amountArray Array of integers representing XP to award, corresponding to each actor.
+ */
 function award_xp(totalAmount, amountArray) {
 
-  console.log("TotalEncounterXP: " + totalAmount);
-  console.log("Amount.Length: " + amountArray.length);
-  console.log("Amount (0): " + amountArray[0].value);
+  //console.log("TotalEncounterXP: " + totalAmount);
+  //console.log("Amount.Length: " + amountArray.length);
+  //console.log("Amount (0): " + amountArray[0].value);
   
   let chatContent = `
 			<b>${totalAmount} Experience Awarded!</b>
@@ -259,7 +273,7 @@ function award_xp(totalAmount, amountArray) {
   actors.forEach(actor => {
     var index = actors.indexOf(actor);
     var awardAmount = parseInt( amountArray[index].value );
-    console.log("Awarding " + awardAmount + " to " + actor.name);
+    //console.log("Awarding " + awardAmount + " to " + actor.name);
     chatContent += `<br>${awardAmount} added to ${actor.name}.`;
     
     actor.update({
@@ -276,6 +290,7 @@ function award_xp(totalAmount, amountArray) {
       ChatMessage.create(chatData);
 }
 
+// Present dialog to permit GM enter the total XP and tweak the amounts.
 new Dialog({
     title: "Award Party XP",
     content: dialogContent,
