@@ -1,4 +1,62 @@
 // --------------------------------------
+// SWITCHES
+
+// Die sides
+const ACTION_DIE_SIDES = {
+  ranged_attack = "1d4",
+  movement = "1d6",
+  swap_gear = "1d6"
+  other_action = "1d6",
+  melee_attack = "1d8",
+  spell = "1d10"
+};
+
+const REVISED_ATTACK = false;
+const REVISED_SPELL = false;
+
+// Only used if REVISED_ATTACK is true
+// The value must be a valid die roll command.
+// Value will replace ranged_attack or melee_attack die rolls.
+// add selected to the <option> bracket if you want a different default value. (or reorganize)
+const HTML_ATTACK_DIE_OPTIONS = 
+`
+<option value="1d4">1d4</option>
+<option value="1d6">1d6</option>
+<option value="1d8">1d8</option>
+<option value="1d10">1d10</option>
+<option value="1d12">1d12</option>
+<option value="2d4">2d4</option>
+<option value="2d6">2d6</option>
+<option value="2d8">2d8</option>
+<option value="2d10">2d10</option>  
+<option value="2d12">2d12</option>  
+<option value="1">1</option>
+`
+
+// Only used if REVISED_SPELL is true
+// The value must be a valid die roll command.
+// Value will be added to the ACTION_DIE_SIDES.spell die roll (e.g., 1d10 + 5 for a fifth level spell)
+
+const HTML_SPELL_DIE_OPTIONS =
+`
+<option value="0">Cantrip</option>
+<option value="1">1</option>
+<option value="2">2</option>
+<option value="3">3</option>
+<option value="4">4</option>
+<option value="5">5</option>
+<option value="6">6</option>
+<option value="7">7</option>
+<option value="8">8</option>  
+<option value="9">9</option>  
+`
+
+
+
+// --------------------------------------
+
+
+// --------------------------------------
 // BASIC 	LOCALIZATION SUPPORT
 // Set names and error messages as constants for easier translation
 // Thanks https://github.com/foundry-vtt-community/macros/blob/f07330b99ec2bde5818600410528ed452272a956/5e/sneak_attack.js
@@ -33,16 +91,16 @@ Use the largest die that corresponds to any one of the actions you plan to take.
 </em>  
 `;
 
+// labels for the dialog
 const actionLabel = "Action";
 const bonusActionLabel = "Bonus Action";
-
 const noneLabel = "None";
-const rangedAttackLabel = "Ranged attack (d4)";
-const movementLabel = "Movement (d6)";
-const swapGearLabel = "Swap Gear (d6)";
-const otherActionLabel = "Other Action (d6)";
-const meleeAttackLabel = "Melee attack (d8)";
-const castSpellLabel = "Cast Spell (d10)";
+const rangedAttackLabel = `Ranged attack (${ACTION_DIE_SIDES.ranged_attack})`;
+const movementLabel = `Movement (${ACTION_DIE_SIDES.movement})`;
+const swapGearLabel = `Swap Gear (${ACTION_DIE_SIDES.swap_gear})`;
+const otherActionLabel = `Other Action (${ACTION_DIE_SIDES.other_action})`;
+const meleeAttackLabel = `Melee attack (${ACTION_DIE_SIDES.melee_attack})`;
+const castSpellLabel = `Cast Spell (${ACTION_DIE_SIDES.spell})`;
 const otherLabel = "Other";
 const initiativeBonusLabel = "Initiative Bonus";
 const initiativePenaltyLabel = "Initiative Penalty";
@@ -51,7 +109,20 @@ const normalLabel = "Normal";
 const advantageLabel = "Advantage";
 const disadvantageLabel = "Disadvantage";
 
-
+// labels for the chat message
+const bonusChatLabel = "Bonus"
+const rangedAttackChatLabel = `Ranged Attack (${ACTION_DIE_SIDES.ranged_attack})`;
+const meleeAttackChatLabel = `Melee Attack (${ACTION_DIE_SIDES.melee_attack})`;
+const movementChatLabel = `Movement (${ACTION_DIE_SIDES.movement})`;
+const swapGearChatLabel = `Swap Gear (${ACTION_DIE_SIDES.swap_gear})`;
+const otherActionChatLabel = `Other Action (${ACTION_DIE_SIDES.other_action})`;
+const castSpellChatLabel = `Cast Spell (${ACTION_DIE_SIDES.spell})`;
+const otherChatLabel = `Other`;
+const surpriseChatLabel = `Surprise`;
+const initiativeBonusChatLabel = `Initiative Bonus`;
+const initiativePenaltyChatLabel = `Initiative Penalty`;
+const advantageChatLabel = `Advantage (lowest roll for largest die)`;
+const disadvantageChatLabel = `Disadvantage (highest roll for largest die)`;
 
 // --------------------------------------
 
@@ -359,7 +430,7 @@ function constructGroupingSelection(label, type = "Name") {
 }
 
 /**
- * Create the JQuery necessary to check and uncheck by group or all.
+ * Create the jQuery necessary to check and uncheck by group or all.
  * User can select "All" to select all combatants.
  * Select a category name (e.g. PCs) to select all in that category.
  * Can select group types or names for NPCs.
@@ -681,7 +752,7 @@ function constructDialogInitiativeActionsContent(names = "") {
 
   const dialogInitiativeActionsContent = 
 `
-<h3> @{titleLabel} </h3> 
+<h3> ${titleLabel} </h3> 
 <p>${selectActionsParagraph}</p>
 <p><em> ${names} </em></p>
 <form>
@@ -880,26 +951,32 @@ function calculateDice(actionPool, other_text = "", initBonus = 1, initPenalty =
 	  switch(action) {
 		case 'RangedAttack':
 		case 'BonusRangedAttack':  
-		  die_strings.push("1d4");
+		  die_strings.push(ACTION_DIE_SIDES.ranged_attack);
 		  break;
 	  
 		case 'Movement':
-		case 'BonusMovement':  
+		case 'BonusMovement': 
+		  die_strings.push(ACTION_DIE_SIDES.movement);
+		  break;
+		   
 		case 'SwapGear':
 		case 'BonusSwapGear':
+		  die_strings.push(ACTION_DIE_SIDES.swap_gear);
+		  break;
+		  
 		case 'OtherAction':
 		case 'BonusOtherAction':  
-		  die_strings.push("1d6");
+		  die_strings.push(ACTION_DIE_SIDES.other_action);
 		  break;
 	
 		case 'MeleeAttack':
 		case 'BonusMeleeAttack':  
-		  die_strings.push("1d8");
+		  die_strings.push(ACTION_DIE_SIDES.melee_attack);
 		  break; 
 	  
 		case 'CastSpell':
 		case 'BonusCastSpell':  
-		  die_strings.push("1d10");
+		  die_strings.push(ACTION_DIE_SIDES.spell);
 		  break; 
 	  
 		case 'Other':     
@@ -986,59 +1063,62 @@ function TranslateActionPoolSelections(actionPool, other_text = "", initBonus = 
 	actionPool.forEach( function(action) {
 	   switch(action) {
 		case 'RangedAttack':
-		  str_array.push("Ranged Attack (d4)");
+		  str_array.push(`${rangedAttackChatLabel}`);
 		  break;
 		case 'BonusRangedAttack':  
-		  str_array.push("Bonus: Ranged Attack (d4)");
+		  str_array.push(`${bonusChatLabel}: ${rangedAttackChatLabel}`);
 		  break;
 		case 'Movement':
-		  str_array.push("Movement (d6)");
+		  str_array.push(`${movementChatLabel}`);
 		  break;
 		case 'BonusMovement':  
-		  str_array.push("Bonus: Movement (d6)");
+		  str_array.push(`${bonusChatLabel}: ${movementChatLabel}`);
 		  break;
 		case 'SwapGear':
-		  str_array.push("Swap Gear (d6)");
+		  str_array.push(`${swapGearChatLabel}`);
 		  break;
 		case 'BonusSwapGear':
-		  str_array.push("Bonus: Swap Gear (d6)");
+		  str_array.push(`${bonusChatLabel}: ${swapGearChatLabel}`);
 		  break;
 		case 'OtherAction':
-		  str_array.push("Other Action (d6)" );
+		  str_array.push(`${otherActionChatLabel}`);
 		  break;
+	  case 'BonusOtherAction':
+		  str_array.push(`${bonusChatLabel}: ${otherActionChatLabel}`);
+		  break;    
 		case 'MeleeAttack':
-		  str_array.push("Melee Attack (d8)");	
+		  str_array.push(`${meleeAttackChatLabel}`);	
 		  break;
 		case 'BonusMeleeAttack':  
-		  str_array.push("Bonus: Melee Attack (d8)");
+		  str_array.push(`${bonusChatLabel}: ${meleeAttackChatLabel}`);
 		  break;
 	  
 		case 'CastSpell':
-		  str_array.push("Cast Spell (d10)");
+		  str_array.push(`${castSpellChatLabel}`);
 		  break;
 		case 'BonusCastSpell':  
-		  str_array.push("Bonus: Cast Spell (d10)");
+		  str_array.push(`${bonusChatLabel}: ${castSpellChatLabel}`);
 		  break; 
 	  
 		case 'Other':    
-		  str_array.push("Other: " + other_text);
+		  str_array.push(`${otherChatLabel}: ${other_text}`);
 		  break;
 	  
 		case 'Surprise':
-		  str_array.push("Surprise (+" + surprise + ")");
+		  str_array.push(`${surpriseChatLabel} (+${surprise})`);
 		  break;
 		case 'InitiativeBonus':
-		  str_array.push("Initiative Bonus (+" + initBonus + ")");
+		  str_array.push(`${initiativeBonusChatLabel} (+${initBonus})`);
 		  break;
 		case 'InitiativePenalty':
-		  str_array.push("Initiative Penalty (-" + initPenalty + ")");
+		  str_array.push(`${initiativePenaltyChatLabel} (-${initPenalty})`);
 		  break;   
 	  
 		case 'Advantage':
-		  str_array.push("Advantage (lowest roll for largest die)");
+		  str_array.push(`${advantageChatLabel}`);
 		  break;
 		case 'Disadvantage':
-		  str_array.push("Disadvantage (highest roll for largest die)");
+		  str_array.push(`${disadvantageChatLabel}`);
 		  break;
 	
 		default:
@@ -1483,6 +1563,7 @@ async function main(combatants) {
 	//console.log("Combatant names: " + combatant_names);
 
 	const initiative_dialog_content = constructDialogInitiativeActionsContent(combatant_names);
+	console.log(initiative_dialog_content);
 
 	let res = await dialogPromise(initiative_dialog_content);
 
