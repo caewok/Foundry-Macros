@@ -11,8 +11,8 @@ const ACTION_DIE_SIDES = {
   spell: "1d10"
 };
 
-const REVISED_ATTACK = false;
-const REVISED_SPELL = false;
+const REVISED_ATTACK = true;
+const REVISED_SPELL = true;
 
 // Only used if REVISED_ATTACK is true
 // The value must be a valid die roll command.
@@ -40,15 +40,15 @@ const HTML_ATTACK_DIE_OPTIONS =
 const HTML_SPELL_DIE_OPTIONS =
 `
 <option value="0">Cantrip</option>
-<option value="1">1</option>
-<option value="2">2</option>
-<option value="3">3</option>
-<option value="4">4</option>
-<option value="5">5</option>
-<option value="6">6</option>
-<option value="7">7</option>
-<option value="8">8</option>  
-<option value="9">9</option>  
+<option value="1">Level 1</option>
+<option value="2">Level 2</option>
+<option value="3">Level 3</option>
+<option value="4">Level 4</option>
+<option value="5">Level 5</option>
+<option value="6">Level 6</option>
+<option value="7">Level 7</option>
+<option value="8">Level 8</option>  
+<option value="9">Level 9</option>  
 `;
 
 
@@ -101,6 +101,8 @@ const swapGearLabel = `Swap Gear (${ACTION_DIE_SIDES.swap_gear})`;
 const otherActionLabel = `Other Action (${ACTION_DIE_SIDES.other_action})`;
 const meleeAttackLabel = `Melee attack (${ACTION_DIE_SIDES.melee_attack})`;
 const castSpellLabel = `Cast Spell (${ACTION_DIE_SIDES.spell})`;
+const attackLabel = `Attack`;
+const castSpellLevelLabel = `Cast Spell`;
 const otherLabel = "Other";
 const initiativeBonusLabel = "Initiative Bonus";
 const initiativePenaltyLabel = "Initiative Penalty";
@@ -110,13 +112,14 @@ const advantageLabel = "Advantage";
 const disadvantageLabel = "Disadvantage";
 
 // labels for the chat message
-const bonusChatLabel = "Bonus"
+const bonusChatLabel = "Bonus";
 const rangedAttackChatLabel = `Ranged Attack (${ACTION_DIE_SIDES.ranged_attack})`;
 const meleeAttackChatLabel = `Melee Attack (${ACTION_DIE_SIDES.melee_attack})`;
 const movementChatLabel = `Movement (${ACTION_DIE_SIDES.movement})`;
 const swapGearChatLabel = `Swap Gear (${ACTION_DIE_SIDES.swap_gear})`;
 const otherActionChatLabel = `Other Action (${ACTION_DIE_SIDES.other_action})`;
 const castSpellChatLabel = `Cast Spell (${ACTION_DIE_SIDES.spell})`;
+const castSpellLevelChatLabel = `Cast Spell`;
 const otherChatLabel = `Other`;
 const surpriseChatLabel = `Surprise`;
 const initiativeBonusChatLabel = `Initiative Bonus`;
@@ -749,6 +752,118 @@ function combineElementsToSummaryString(names) {
  */
 function constructDialogInitiativeActionsContent(names = "") {
   names = combineElementsToSummaryString(names);
+  
+  let row_rangedAttack = 
+  `
+  <tr>
+		<td> <input type="checkbox" id="RangedAttack" class="ActionSelection"/></td>
+		<td> <label for="RangedAttack">${rangedAttackLabel}</label></td>
+		<td> <input type="radio" name="BonusAction" id="BonusRangedAttack" class="ActionSelection"/></td>
+	</tr>
+  `;
+  
+  let row_movement = 
+  `
+  <tr>
+		<td> <input type="checkbox" id="Movement" class="ActionSelection"/></td>
+		<td> <label for="Movement">${movementLabel}</label></td>
+		<td> <input type="radio" name="BonusAction" id="BonusMovement"act class="ActionSelection"/></td>
+ </tr>
+  `;
+  
+  let row_swapGear = 
+  `
+  <tr>
+		<td> <input type="checkbox" id="SwapGear" class="ActionSelection"/></td>
+		<td> <label for="SwapGear">${swapGearLabel}</label></td>
+		<td> <input type="radio" name="BonusAction" id="BonusSwapGear"act class="ActionSelection"/></td>
+	</tr>
+  `;
+  
+  let row_otherAction = 
+  `
+	<tr>
+		<td> <input type="checkbox" id="OtherAction" class="ActionSelection"/></td>
+		<td> <label for="OtherAction">${otherActionLabel}</label></td>
+		<td> <input type="radio" name="BonusAction" id="BonusOtherAction"act class="ActionSelection"/></td>
+	</tr>
+  `;
+  
+  let row_meleeAttack =
+  `
+  <tr>
+		<td> <input type="checkbox" id="MeleeAttack" class="ActionSelection"/></td>
+		<td> <label for="MeleeAttack">${meleeAttackLabel}</label></td>
+		<td> <input type="radio" name="BonusAction" id="BonusMeleeAttack"act class="ActionSelection"/></td>
+	</tr>
+  `;
+  
+  let row_castSpell = 
+  `
+  <tr>
+		<td> <input type="checkbox" id="CastSpell" class="ActionSelection"/></td>
+		<td> <label for="CastSpell">${castSpellLabel}</label></td>
+		<td> <input type="radio" name="BonusAction" id="BonusCastSpell"act class="ActionSelection"/></td>
+	</tr>
+  `;
+  
+  let row_attack = ""; 
+  if(REVISED_ATTACK) {
+    row_rangedAttack = "";
+    row_attack = 
+    `
+    <tr>
+			<td> <input type="checkbox" id="Attack" class="ActionSelection"/></td>
+			<td> <label for="Attack">${attackLabel}</label>
+				<select id="AttackDie" name="AttackDie">
+					${HTML_ATTACK_DIE_OPTIONS}
+				</select></td>
+			<td> <input type="radio" name="BonusAction" id="BonusAttack" class="ActionSelection"/></td>   
+		</tr>
+      
+		<tr>
+			<td> <input type="checkbox" id="Attack2" class="ActionSelection"/></td>
+			<td> <label for="Attack2">${attackLabel}</label>
+				<select id="Attack2Die" name="Attack2Die">
+					${HTML_ATTACK_DIE_OPTIONS}
+				</select></td>
+			<td> <input type="radio" name="BonusAction" id="BonusAttack2" class="ActionSelection"/></td>
+		</tr>    
+    `
+  }
+  
+  if(REVISED_SPELL) {
+    row_castSpell = 
+    `
+    <tr>
+            <td> <input type="checkbox" id="CastSpellLevel" class="ActionSelection"/></td>
+            <td> <label for="CastSpellLevel">${castSpellLevelLabel}</label>
+                <select id="SpellLevel" name="SpellLevel">
+                ${HTML_SPELL_DIE_OPTIONS}
+                </select></td>
+           
+           </td>
+    
+          </td>
+            <td> <input type="radio" name="BonusAction" id="BonusCastSpellLevel"act class="ActionSelection"/></td>
+         </tr>
+    
+          <tr>
+            <td> <input type="checkbox" id="CastSpell2Level" class="ActionSelection"/></td>
+            <td> <label for="CastSpell2Level">${castSpellLevelLabel}</label>
+                <select id="Spell2Level" name="Spell2Level">
+                ${HTML_SPELL_DIE_OPTIONS}
+                </select></td>
+           
+           </td>
+            <td> <input type="radio" name="BonusAction" id="BonusCastSpell2Level"act class="ActionSelection"/></td>
+         </tr>
+    
+    `;
+    
+  
+  }
+  
 
   const dialogInitiativeActionsContent = 
 `
@@ -768,43 +883,15 @@ function constructDialogInitiativeActionsContent(names = "") {
            <td style="text-align:right"> <label for="None">${noneLabel}</label></td>
            <td> <input type="radio" name="BonusAction" id="BonusNone" class="ActionSelection" checked/></td>
          </tr>
-      
-         <tr>
-           <td> <input type="checkbox" id="RangedAttack" class="ActionSelection"/></td>
-           <td> <label for="RangedAttack">${rangedAttackLabel}</label></td>
-           <td> <input type="radio" name="BonusAction" id="BonusRangedAttack" class="ActionSelection"/></td>
-         </tr>
          
-         <tr>
-            <td> <input type="checkbox" id="Movement" class="ActionSelection"/></td>
-            <td> <label for="Movement">${movementLabel}</label></td>
-            <td> <input type="radio" name="BonusAction" id="BonusMovement"act class="ActionSelection"/></td>
-         </tr>
-    
-         <tr>
-            <td> <input type="checkbox" id="SwapGear" class="ActionSelection"/></td>
-            <td> <label for="SwapGear">${swapGearLabel}</label></td>
-            <td> <input type="radio" name="BonusAction" id="BonusSwapGear"act class="ActionSelection"/></td>
-         </tr>
+         ${row_attack}
+         ${row_rangedAttack}
+         ${row_movement}
+         ${row_swapGear}
+         ${row_otherAction}
+    		 ${row_meleeAttack}
+    		 ${row_castSpell}
         
-         <tr>
-            <td> <input type="checkbox" id="OtherAction" class="ActionSelection"/></td>
-            <td> <label for="OtherAction">${otherActionLabel}</label></td>
-            <td> <input type="radio" name="BonusAction" id="BonusOtherAction"act class="ActionSelection"/></td>
-         </tr>
-      
-         <tr>
-            <td> <input type="checkbox" id="MeleeAttack" class="ActionSelection"/></td>
-            <td> <label for="MeleeAttack">${meleeAttackLabel}</label></td>
-            <td> <input type="radio" name="BonusAction" id="BonusMeleeAttack"act class="ActionSelection"/></td>
-         </tr>
-    
-         <tr>
-            <td> <input type="checkbox" id="CastSpell" class="ActionSelection"/></td>
-            <td> <label for="CastSpell">${castSpellLabel}</label></td>
-            <td> <input type="radio" name="BonusAction" id="BonusCastSpell"act class="ActionSelection"/></td>
-         </tr>
-      
          <tr>
            <td> <input type="checkbox" id="Other" class="ActionSelection"/> </td>
            <td colspan=2> <label for="Other">${otherLabel}</label> <input type="text" id="OtherText"/></td>
@@ -836,7 +923,7 @@ function constructDialogInitiativeActionsContent(names = "") {
   <input type="radio" id="Advantage" name="AdvDis" class="ActionSelection"/>
   <label for="Advantage">${advantageLabel}</label> 
   <input type="radio" id="Disadvantage" name="AdvDis" class="ActionSelection"/>
-  <label for="Disadvantage">disadvantageLabel</label> 
+  <label for="Disadvantage">${disadvantageLabel}</label> 
     
   <br>
     
@@ -866,7 +953,7 @@ function constructDialogInitiativeActionsContent(names = "") {
  * @surprise Surprise penalty chosen by user. Only used if Surprise was checked (in actionSelections).
  * @return The die roll command for the initiative and the description string for the actions.
  */
-function constructInitiativeRoll(actionSelections, otherText, initBonus = 1, initPenalty = 1, surprise = 10) {
+function constructInitiativeRoll(actionSelections, otherText, initBonus = 1, initPenalty = 1, surprise = 10, attackDie = "", attack2Die = "", spellLevelDie = "", spell2LevelDie = "", spellLevelText = "", spell2LevelText = "") {
   //console.log("actionSelections.Length: " + actionSelections.length);
   //console.log("actionSelections (0): " + actionSelections[0].id + " " + actionSelections[0].checked);
   //console.log("actionSelections (1): " + actionSelections[1].id + " " + actionSelections[1].checked);
@@ -887,11 +974,12 @@ function constructInitiativeRoll(actionSelections, otherText, initBonus = 1, ini
   }
   
   //console.log("actionPool: " + actionPool);
-  
-  let dice = calculateDice(actionPool, otherText, initBonus, initPenalty, surprise);
+  //console.log("attackDie: " + attackDie + "; attack2Die: " + attack2Die);
+  //console.log("spellLevelText: " + spellLevelText + " spell2LevelText: " + spell2LevelText);
+  let dice = calculateDice(actionPool, otherText, initBonus, initPenalty, surprise, attackDie, attack2Die, spellLevelDie, spell2LevelDie);
   let init_roll = constructInitiativeRollCommand(dice); 
   
-  const action_str = TranslateActionPoolSelections(actionPool, otherText, initBonus, initPenalty, surprise);
+  const action_str = TranslateActionPoolSelections(actionPool, otherText, initBonus, initPenalty, surprise, attackDie, attack2Die, spellLevelDie, spell2LevelDie, spellLevelText, spell2LevelText);
   //console.log(action_str);
   
   return { init_roll, action_str };
@@ -940,9 +1028,11 @@ function constructInitiativeRollCommand(dice) {
  * @surprise Surprise penalty chosen by user. Only used if Surprise was checked (in actionSelections).
  * @return Array of DieRoll objects corresponding to the necessary die rolls required.
  */
-function calculateDice(actionPool, other_text = "", initBonus = 1, initPenalty = 1, surprise = 10) {
+function calculateDice(actionPool, other_text = "", initBonus = 1, initPenalty = 1, surprise = 10, attackDie = "", attack2Die = "", spellLevelDie = "", spell2LevelDie = "") {
 	//console.log("CalculateDice");
-
+	//console.log(actionPool);
+  //console.log("attackDie: " + attackDie + "; attack2Die: " + attack2Die);
+  
 	var die_strings = [];
 	var initiative_bonus = false;
 	var initiative_penalty = false;
@@ -978,6 +1068,50 @@ function calculateDice(actionPool, other_text = "", initBonus = 1, initPenalty =
 		case 'BonusCastSpell':  
 		  die_strings.push(ACTION_DIE_SIDES.spell);
 		  break; 
+		  
+		case 'Attack':
+		  die_strings.push(attackDie);
+		  break;
+	  
+	  case 'Attack2':
+	    die_strings.push(attack2Die);
+	    break;  
+	    
+	  case 'BonusAttack':
+			die_strings.push(attackDie);
+		  break;
+		  
+		case 'BonusAttack2':
+		  die_strings.push(attack2Die);
+	    break;
+	  
+	  case 'CastSpellLevel':
+	    die_strings.push([ACTION_DIE_SIDES.spell]);
+	    if(!isBlank(spellLevelDie)) {
+	       die_strings.push(spellLevelDie);
+	    }
+	    break;
+	  
+		case 'CastSpell2Level':
+	    die_strings.push([ACTION_DIE_SIDES.spell]);
+	    if(!isBlank(spell2LevelDie)) {
+	       die_strings.push(spell2LevelDie);
+	    }
+	    break;
+	    
+		case 'BonusCastSpellLevel':
+	    die_strings.push([ACTION_DIE_SIDES.spell]);
+	    if(!isBlank(spellLevelDie)) {
+	       die_strings.push(spellLevelDie);
+	    }
+	    break;
+	    
+		case 'BonusCastSpell2Level':
+	    die_strings.push([ACTION_DIE_SIDES.spell]);
+	    if(!isBlank(spell2LevelDie)) {
+	       die_strings.push(spell2LevelDie);
+	    }
+	    break;
 	  
 		case 'Other':     
 		  die_strings.push( other_text );     
@@ -1057,8 +1191,9 @@ function calculateDice(actionPool, other_text = "", initBonus = 1, initPenalty =
  * @surprise Surprise penalty chosen by user. Only used if Surprise was checked (in actionSelections).
  * @return HTML string, as a bulleted list of actions.
  */
-function TranslateActionPoolSelections(actionPool, other_text = "", initBonus = 1, initPenalty = 1, surprise = 10) {
+function TranslateActionPoolSelections(actionPool, other_text = "", initBonus = 1, initPenalty = 1, surprise = 10, attackDie = "", attack2Die = "", spellLevelDie = "", spell2LevelDie = "", spellLevelText = "", spell2LevelText = "") {
   let str_array = [];
+  console.log("spellLevelText: " + spellLevelText + " spell2LevelText: " + spell2LevelText);
 
 	actionPool.forEach( function(action) {
 	   switch(action) {
@@ -1092,6 +1227,22 @@ function TranslateActionPoolSelections(actionPool, other_text = "", initBonus = 
 		case 'BonusMeleeAttack':  
 		  str_array.push(`${bonusChatLabel}: ${meleeAttackChatLabel}`);
 		  break;
+		  
+	  case 'Attack':
+	    str_array.push(`${attackLabel} (${attackDie})`);
+	    break;
+	    
+	  case 'Attack2':
+	    str_array.push(`${attackLabel} (${attack2Die})`);
+	    break;
+	  
+	  case 'BonusAttack':
+	    str_array.push(`${bonusChatLabel}: ${attackLabel} (${attackDie})`);
+	    break;
+	    
+		case 'BonusAttack2':
+	    str_array.push(`${bonusChatLabel}: ${attackLabel} (${attack2Die})`);
+	    break;  
 	  
 		case 'CastSpell':
 		  str_array.push(`${castSpellChatLabel}`);
@@ -1099,6 +1250,22 @@ function TranslateActionPoolSelections(actionPool, other_text = "", initBonus = 
 		case 'BonusCastSpell':  
 		  str_array.push(`${bonusChatLabel}: ${castSpellChatLabel}`);
 		  break; 
+		  
+		case 'CastSpellLevel':
+		  str_array.push(`${castSpellLevelLabel} (${spellLevelText}) (${ACTION_DIE_SIDES.spell} + ${spellLevelDie})`);
+		  break;
+		  
+		case 'CastSpell2Level':
+		  str_array.push(`${castSpellLevelLabel} (${spell2LevelText}) (${ACTION_DIE_SIDES.spell} + ${spell2LevelDie})`);
+		  break;
+		  
+		case 'BonusCastSpellLevel':
+		  str_array.push(`${bonusChatLabel}: ${castSpellLevelLabel} (${spellLevelText}) (${ACTION_DIE_SIDES.spell} + ${spellLevelDie})`);
+		  break;
+		  
+		case 'BonusCastSpell2Level':
+		  str_array.push(`${bonusChatLabel}: ${castSpellLevelLabel} (${spell2LevelText}) (${ACTION_DIE_SIDES.spell} + ${spell2LevelDie})`);
+		  break;
 	  
 		case 'Other':    
 		  str_array.push(`${otherChatLabel}: ${other_text}`);
@@ -1258,22 +1425,22 @@ function DieRoll(number, sides, remainder = "", modifier = "+", original_str = "
  * DieRoll method to decrement the number of sides (typically by 2, so 1d6 --> 1d4).
  */  
 DieRoll.prototype.decreaseSides = function() {
-  console.log("decreaseSides");
+  //console.log("decreaseSides");
   var self = this;
-  console.log("Self sides: " + this.sides);
+  //console.log("Self sides: " + this.sides);
   this.sides = modifySides(self.sides, "decrease");
-  console.log("Self sides: " + this.sides);
+  //console.log("Self sides: " + this.sides);
 }
 
 /**
  * DieRoll method to increment the number of sides (typically by 2, so 1d4 --> 1d6).
  */ 
 DieRoll.prototype.increaseSides = function() {
-  console.log("increaseSides");
+  //console.log("increaseSides");
   var self = this;
-  console.log("Self sides: " + this.sides);
+  //console.log("Self sides: " + this.sides);
   this.sides = modifySides(self.sides, "increase");
-  console.log("Self sides: " + this.sides);
+  //console.log("Self sides: " + this.sides);
 }
 
 /**
@@ -1370,9 +1537,9 @@ function modifySides(current_sides, how = "increase") {
   // increase or decrease by 2, as d4 through d12 use 2. 
   // for consistency, allow die in-between d12 and d20, and simply increase by 2 otherwise.
   //console.log("modifySides: " + current_sides);
-  console.log("modifySides");
+  //console.log("modifySides");
   current_sides = parseInt( current_sides );
-  console.log("Current sides: " + current_sides);
+  //console.log("Current sides: " + current_sides);
   
   if("increase" === how) {
     if(current_sides <= 1) {
@@ -1563,22 +1730,52 @@ async function main(combatants) {
 	//console.log("Combatant names: " + combatant_names);
 
 	const initiative_dialog_content = constructDialogInitiativeActionsContent(combatant_names);
-	console.log(initiative_dialog_content);
+	//console.log(initiative_dialog_content);
 
-	let res = await dialogPromise(initiative_dialog_content);
+	const res = await dialogPromise(initiative_dialog_content);
 
 
-	let actionSelections = (res.find('[class=ActionSelection]'));
+	const actionSelections = (res.find('[class=ActionSelection]'));
 	if(actionSelections.length < 1) {
 	  console.log("No actions selected.");
 	  return;
 	}
+
 	
-	let otherText = res.find('[id=OtherText]')[0].value;
-	let initBonus = res.find('[id=InitiativeBonusNumber]')[0].value;
-	let initPenalty = res.find('[id=InitiativePenaltyNumber]')[0].value;
-	let surprise = res.find('[id=SupriseNumber]')[0].value;
-	const { init_roll, action_str } = constructInitiativeRoll(actionSelections, otherText, initBonus, initPenalty, surprise);
+	const otherText = res.find('[id=OtherText]')[0].value;
+	const initBonus = res.find('[id=InitiativeBonusNumber]')[0].value;
+	const initPenalty = res.find('[id=InitiativePenaltyNumber]')[0].value;
+	const surprise = res.find('[id=SupriseNumber]')[0].value;
+	console.log("\totherText: " + otherText + "\n\tinitBonus: " + initBonus + "\n\tinitPenalty: " + initPenalty + "\n\tsurprise: " + surprise);
+	
+	
+	let attackDie = "";
+	let attack2Die = "";
+	if(REVISED_ATTACK) {
+	  attackDie = res.find('[id=AttackDie]')[0].value;
+	  attack2Die = res.find('[id=Attack2Die]')[0].value;
+	  console.log("attackDie: " + attackDie + "; attack2Die: " + attack2Die);
+	}
+	
+	let spellLevelDie = "";
+	let spell2LevelDie = "";
+	let spellLevelText = "";
+	let spell2LevelText = "";
+	if(REVISED_SPELL) {
+	  const spellLevel = res.find('[id=SpellLevel]')[0];
+    const spell2Level = res.find('[id=Spell2Level]')[0];	
+
+	  spellLevelDie = spellLevel.value;
+	  spell2LevelDie = spell2Level.value;
+	
+	  spellLevelText = spellLevel.options[spellLevel.selectedIndex].text;
+	  spell2LevelText = spell2Level.options[spell2Level.selectedIndex].text;
+	  
+	  console.log("spellLevelDie: " + spellLevelDie + "; spellLevelText: " + spellLevelText);
+	  console.log("spell2LevelDie: " + spell2LevelDie + "; spell2LevelText: " + spell2LevelText);  
+	}
+	
+	const { init_roll, action_str } = constructInitiativeRoll(actionSelections, otherText, initBonus, initPenalty, surprise, attackDie, attack2Die, spellLevelDie, spell2LevelDie, spellLevelText, spell2LevelText);
 
 	//console.log(action_str);
 
