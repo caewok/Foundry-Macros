@@ -1154,9 +1154,11 @@ function calculateDice(actionPool, other_text = "", initBonus = 1, initPenalty =
 	  // find the highest die; step side down by one increment (-2 sides) for each bonus
 	  const largest_index = largestDie(dice);
 	  //console.log("Applying +" + initBonus + " initiative bonus to die " + dice[largest_index].original_string);
-  
-	  for(var i=0; i < initBonus; i++) {
-			dice[largest_index].decreaseSides();
+   
+    if(!isBlank(largest_index)) {
+			for(var i=0; i < initBonus; i++) {
+				dice[largest_index].decreaseSides();
+			}
 	  }
 	  //console.log("Resulting die sides: " + dice[largest_index].sides);
 	}
@@ -1166,8 +1168,10 @@ function calculateDice(actionPool, other_text = "", initBonus = 1, initPenalty =
 	  const smallest_index = smallestDie(dice);
 	  //console.log("Applying -" + initPenalty + " initiative penalty to die " + dice[smallest_index].original_string);
 	  
-	  for(var i=0; i < initPenalty; i++) {
-			dice[smallest_index].increaseSides();
+	  if(!isBlank(smallest_index)) {
+			for(var i=0; i < initPenalty; i++) {
+				dice[smallest_index].increaseSides();
+			}
 	  }
 	  //console.log("Resulting die sides: " + dice[smallest_index].sides);
 	}
@@ -1572,16 +1576,19 @@ function modifySides(current_sides, how = "increase") {
  * Ultimately needed to implement advantage/disadvantage and initiative bonus/penalty.
  * @dice DieRoll array
  * @type "max" or "min"
+ * @ignore_single_sided Needed to avoid finding "dice" that are really just bonuses.
  * @return Corresponding index for the die in the array.
  */
-function findDie(dice, type = "max") {
+function findDie(dice, type = "max", ignore_single_sided = true) {
   var match_sides = null;
   var match_index;
   
   dice.forEach( function(die, index) {
     if(null == match_sides || ("max" == type && die.sides > match_sides) || ("min" == type && die.sides < match_sides)) {
-      match_sides = die.sides;
-      match_index = index;
+      if(ignore_single_sided && die.sides > 1) {
+				match_sides = die.sides;
+				match_index = index;
+      }
     }
   });
 
