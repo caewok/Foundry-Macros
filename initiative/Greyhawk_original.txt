@@ -30,7 +30,7 @@ const HTML_ATTACK_DIE_OPTIONS =
 <option value="2d8">2d8</option>
 <option value="2d10">2d10</option>  
 <option value="2d12">2d12</option>  
-<option value="1">1</option>
+<option value="1">1</option>a
 `;
 
 // Only used if REVISED_SPELL is true
@@ -72,12 +72,15 @@ const NPCsLabel = "Creatures / NPCs";
 const creatureNamesLabel = "Creature Names";
 const creatureTypesLabel = "Creature Types";
 
+// Language used in the dialog to select combatants
 const selectCombatantsHeaderLabel = "Select Combatants";
 const selectCombatantsParagraph = 
 `Select one or more of the following to set their initiative for this turn.
  <br><em> Selecting more than one will set the same actions for all selected.</em>
 `;
 
+
+// Language used in the dialog to select actions
 const selectActionsParagraph = "Please select one or more actions for:";
 const selectActionsBonusParagraph = "Initiative bonus/penalty steps largest die down/up, respectively.";
 const selectActionsAdvDisParagraph = "Advantage/disadvantage causes the largest die to be rolled with disadvantage/advantage, respectively.";
@@ -91,41 +94,43 @@ Use the largest die that corresponds to any one of the actions you plan to take.
 </em>  
 `;
 
-// labels for the dialog
-const actionLabel = "Action";
-const bonusActionLabel = "Bonus Action";
-const noneLabel = "None";
-const rangedAttackLabel = `Ranged attack (${ACTION_DIE_SIDES.ranged_attack})`;
-const movementLabel = `Movement (${ACTION_DIE_SIDES.movement})`;
-const swapGearLabel = `Swap Gear (${ACTION_DIE_SIDES.swap_gear})`;
-const otherActionLabel = `Other Action (${ACTION_DIE_SIDES.other_action})`;
-const meleeAttackLabel = `Melee attack (${ACTION_DIE_SIDES.melee_attack})`;
-const castSpellLabel = `Cast Spell (${ACTION_DIE_SIDES.spell})`;
-const attackLabel = `Attack`;
-const castSpellLevelLabel = `Cast Spell`;
-const otherLabel = "Other";
-const initiativeBonusLabel = "Initiative Bonus";
-const initiativePenaltyLabel = "Initiative Penalty";
-const surpriseLabel = "Surprise";
-const normalLabel = "Normal";
-const advantageLabel = "Advantage";
-const disadvantageLabel = "Disadvantage";
+// Text in the action selection table and subsequent chat message.
+const PHRASES = {
+  action: "Action", 
+  attack: "Attack",
+  bonus: "Bonus",
+  bonus_action: "Bonus Action",
+  cast_spell: "Cast Spell",
+  melee_attack: "Melee Attack",
+  movement: "Movement",
+  none: "None",
+  other: "Other",
+  other_action: "Other Action",
+  ranged_attack: "Ranged Attack",
+  surprise: "Surprise",
+  swap_gear: "Swap Gear",
+  
+  init_bonus: "Initiative Bonus",
+  init_penalty: "Initiative Penalty",
+  
+  normal: "Normal",
+  advantage: "Advantage",
+  disadvantage: "Disadvantage",
+  
+  advantage_explanation: "lowest roll for largest die",
+  disadvantage_explanation: "highest roll for largest die"
+};
 
-// labels for the chat message
-const bonusChatLabel = "Bonus";
-const rangedAttackChatLabel = `Ranged Attack (${ACTION_DIE_SIDES.ranged_attack})`;
-const meleeAttackChatLabel = `Melee Attack (${ACTION_DIE_SIDES.melee_attack})`;
-const movementChatLabel = `Movement (${ACTION_DIE_SIDES.movement})`;
-const swapGearChatLabel = `Swap Gear (${ACTION_DIE_SIDES.swap_gear})`;
-const otherActionChatLabel = `Other Action (${ACTION_DIE_SIDES.other_action})`;
-const castSpellChatLabel = `Cast Spell (${ACTION_DIE_SIDES.spell})`;
-const castSpellLevelChatLabel = `Cast Spell`;
-const otherChatLabel = `Other`;
-const surpriseChatLabel = `Surprise`;
-const initiativeBonusChatLabel = `Initiative Bonus`;
-const initiativePenaltyChatLabel = `Initiative Penalty`;
-const advantageChatLabel = `Advantage (lowest roll for largest die)`;
-const disadvantageChatLabel = `Disadvantage (highest roll for largest die)`;
+const DIALOG_LABELS = {
+  ranged_attack: `${PHRASES.ranged_attack} (${ACTION_DIE_SIDES.ranged_attack})`,
+  movement: `${PHRASES.movement} (${ACTION_DIE_SIDES.movement})`,
+  swap_gear: `${PHRASES.swap_gear} (${ACTION_DIE_SIDES.swap_gear})`,
+  other_action: `${PHRASES.other_action} (${ACTION_DIE_SIDES.other_action})`,
+  melee_attack: `${PHRASES.melee_attack} (${ACTION_DIE_SIDES.melee_attack})`,
+  cast_spell: `${PHRASES.cast_spell} (${ACTION_DIE_SIDES.spell})`
+};
+
+
 
 // --------------------------------------
 
@@ -757,7 +762,7 @@ function constructDialogInitiativeActionsContent(names = "") {
   `
   <tr>
 		<td> <input type="checkbox" id="RangedAttack" class="ActionSelection"/></td>
-		<td> <label for="RangedAttack">${rangedAttackLabel}</label></td>
+		<td> <label for="RangedAttack">${DIALOG_LABELS.ranged_attack}</label></td>
 		<td> <input type="radio" name="BonusAction" id="BonusRangedAttack" class="ActionSelection"/></td>
 	</tr>
   `;
@@ -766,7 +771,7 @@ function constructDialogInitiativeActionsContent(names = "") {
   `
   <tr>
 		<td> <input type="checkbox" id="Movement" class="ActionSelection"/></td>
-		<td> <label for="Movement">${movementLabel}</label></td>
+		<td> <label for="Movement">${DIALOG_LABELS.movement}</label></td>
 		<td> <input type="radio" name="BonusAction" id="BonusMovement"act class="ActionSelection"/></td>
  </tr>
   `;
@@ -775,7 +780,7 @@ function constructDialogInitiativeActionsContent(names = "") {
   `
   <tr>
 		<td> <input type="checkbox" id="SwapGear" class="ActionSelection"/></td>
-		<td> <label for="SwapGear">${swapGearLabel}</label></td>
+		<td> <label for="SwapGear">${DIALOG_LABELS.swap_gear}</label></td>
 		<td> <input type="radio" name="BonusAction" id="BonusSwapGear"act class="ActionSelection"/></td>
 	</tr>
   `;
@@ -784,7 +789,7 @@ function constructDialogInitiativeActionsContent(names = "") {
   `
 	<tr>
 		<td> <input type="checkbox" id="OtherAction" class="ActionSelection"/></td>
-		<td> <label for="OtherAction">${otherActionLabel}</label></td>
+		<td> <label for="OtherAction">${DIALOG_LABELS.other_action}</label></td>
 		<td> <input type="radio" name="BonusAction" id="BonusOtherAction"act class="ActionSelection"/></td>
 	</tr>
   `;
@@ -793,7 +798,7 @@ function constructDialogInitiativeActionsContent(names = "") {
   `
   <tr>
 		<td> <input type="checkbox" id="MeleeAttack" class="ActionSelection"/></td>
-		<td> <label for="MeleeAttack">${meleeAttackLabel}</label></td>
+		<td> <label for="MeleeAttack">${DIALOG_LABELS.melee_attack}</label></td>
 		<td> <input type="radio" name="BonusAction" id="BonusMeleeAttack"act class="ActionSelection"/></td>
 	</tr>
   `;
@@ -802,7 +807,7 @@ function constructDialogInitiativeActionsContent(names = "") {
   `
   <tr>
 		<td> <input type="checkbox" id="CastSpell" class="ActionSelection"/></td>
-		<td> <label for="CastSpell">${castSpellLabel}</label></td>
+		<td> <label for="CastSpell">${DIALOG_LABELS.cast_spell}</label></td>
 		<td> <input type="radio" name="BonusAction" id="BonusCastSpell"act class="ActionSelection"/></td>
 	</tr>
   `;
@@ -814,7 +819,7 @@ function constructDialogInitiativeActionsContent(names = "") {
     `
     <tr>
 			<td> <input type="checkbox" id="Attack" class="ActionSelection"/></td>
-			<td> <label for="Attack">${attackLabel}</label>
+			<td> <label for="Attack">${PHRASES.attack}</label>
 				<select id="AttackDie" name="AttackDie">
 					${HTML_ATTACK_DIE_OPTIONS}
 				</select></td>
@@ -823,7 +828,7 @@ function constructDialogInitiativeActionsContent(names = "") {
       
 		<tr>
 			<td> <input type="checkbox" id="Attack2" class="ActionSelection"/></td>
-			<td> <label for="Attack2">${attackLabel}</label>
+			<td> <label for="Attack2">${PHRASES.attack}</label>
 				<select id="Attack2Die" name="Attack2Die">
 					${HTML_ATTACK_DIE_OPTIONS}
 				</select></td>
@@ -837,7 +842,7 @@ function constructDialogInitiativeActionsContent(names = "") {
     `
     <tr>
             <td> <input type="checkbox" id="CastSpellLevel" class="ActionSelection"/></td>
-            <td> <label for="CastSpellLevel">${castSpellLevelLabel}</label>
+            <td> <label for="CastSpellLevel">${PHRASES.cast_spell}</label>
                 <select id="SpellLevel" name="SpellLevel">
                 ${HTML_SPELL_DIE_OPTIONS}
                 </select></td>
@@ -850,7 +855,7 @@ function constructDialogInitiativeActionsContent(names = "") {
     
           <tr>
             <td> <input type="checkbox" id="CastSpell2Level" class="ActionSelection"/></td>
-            <td> <label for="CastSpell2Level">${castSpellLevelLabel}</label>
+            <td> <label for="CastSpell2Level">${PHRASES.cast_spell}</label>
                 <select id="Spell2Level" name="Spell2Level">
                 ${HTML_SPELL_DIE_OPTIONS}
                 </select></td>
@@ -874,13 +879,13 @@ function constructDialogInitiativeActionsContent(names = "") {
   <table>
     <thead>
          <tr>
-            <th style="text-align:left">${actionLabel}</th>
-            <th colspan=2 style="text-align:right">${bonusActionLabel}</th>
+            <th style="text-align:left">${PHRASES.action}</th>
+            <th colspan=2 style="text-align:right">${PHRASES.bonus_action}</th>
          </tr>
       
          <tr>
            <td> </td>
-           <td style="text-align:right"> <label for="None">${noneLabel}</label></td>
+           <td style="text-align:right"> <label for="None">${PHRASES.none}</label></td>
            <td> <input type="radio" name="BonusAction" id="BonusNone" class="ActionSelection" checked/></td>
          </tr>
          
@@ -894,7 +899,7 @@ function constructDialogInitiativeActionsContent(names = "") {
         
          <tr>
            <td> <input type="checkbox" id="Other" class="ActionSelection"/> </td>
-           <td colspan=2> <label for="Other">${otherLabel}</label> <input type="text" id="OtherText"/></td>
+           <td colspan=2> <label for="Other">${PHRASES.other}</label> <input type="text" id="OtherText"/></td>
            
          </tr>
       
@@ -905,25 +910,25 @@ function constructDialogInitiativeActionsContent(names = "") {
 
   
   <br><input type="checkbox" id="InitiativeBonus" class="ActionSelection"/>
-  <label for="InitiativeBonus">${initiativeBonusLabel}</label>
+  <label for="InitiativeBonus">${PHRASES.init_bonus}</label>
   <input type="number" id="InitiativeBonusNumber" min=0 max=99 step=1 value=1>
  
   <br><input type="checkbox" id="InitiativePenalty" class="ActionSelection"/>
-  <label for="InitiativePenalty">${initiativePenaltyLabel}</label>
+  <label for="InitiativePenalty">${PHRASES.init_penalty}</label>
   <input type="number" id="InitiativePenaltyNumber" min=0 max=99 step=1 value=1>  
   
   <br><input type="checkbox" id="Surprise" class="ActionSelection"/>
-  <label for="Surprise">${surpriseLabel}</label>
+  <label for="Surprise">${PHRASES.surprise}</label>
   <input type="number" id="SupriseNumber" min=0 max=99 step=1 value=10>
 
   <br>
   
   <br><input type="radio" id="Normal" name="AdvDis" class="ActionSelection" Checked/>
-  <label for="Normal">${normalLabel}</label> 
+  <label for="Normal">${PHRASES.normal}</label> 
   <input type="radio" id="Advantage" name="AdvDis" class="ActionSelection"/>
-  <label for="Advantage">${advantageLabel}</label> 
+  <label for="Advantage">${PHRASES.advantage}</label> 
   <input type="radio" id="Disadvantage" name="AdvDis" class="ActionSelection"/>
-  <label for="Disadvantage">${disadvantageLabel}</label> 
+  <label for="Disadvantage">${PHRASES.disadvantage}</label> 
     
   <br>
     
@@ -1198,94 +1203,95 @@ function TranslateActionPoolSelections(actionPool, other_text = "", initBonus = 
 	actionPool.forEach( function(action) {
 	   switch(action) {
 		case 'RangedAttack':
-		  str_array.push(`${rangedAttackChatLabel}`);
+		  str_array.push(`${DIALOG_LABELS.ranged_attack}`);
 		  break;
 		case 'BonusRangedAttack':  
-		  str_array.push(`${bonusChatLabel}: ${rangedAttackChatLabel}`);
+		  str_array.push(`${PHRASES.bonus}: ${DIALOG_LABELS.ranged_attack}`);
 		  break;
 		case 'Movement':
-		  str_array.push(`${movementChatLabel}`);
+		  str_array.push(`${DIALOG_LABELS.movement}`);
 		  break;
 		case 'BonusMovement':  
-		  str_array.push(`${bonusChatLabel}: ${movementChatLabel}`);
+		  str_array.push(`${PHRASES.bonus}: ${DIALOG_LABELS.movement}`);
 		  break;
 		case 'SwapGear':
-		  str_array.push(`${swapGearChatLabel}`);
+		  str_array.push(`${DIALOG_LABELS.swap_gear}`);
 		  break;
 		case 'BonusSwapGear':
-		  str_array.push(`${bonusChatLabel}: ${swapGearChatLabel}`);
+		  str_array.push(`${PHRASES.bonus}: ${DIALOG_LABELS.swap_gear}`);
 		  break;
 		case 'OtherAction':
-		  str_array.push(`${otherActionChatLabel}`);
+		  str_array.push(`${DIALOG_LABELS.other_action}`);
 		  break;
 	  case 'BonusOtherAction':
-		  str_array.push(`${bonusChatLabel}: ${otherActionChatLabel}`);
+		  str_array.push(`${PHRASES.bonus}: ${DIALOG_LABELS.other_action}`);
 		  break;    
 		case 'MeleeAttack':
-		  str_array.push(`${meleeAttackChatLabel}`);	
+		  str_array.push(`${DIALOG_LABELS.melee_attack}`);	
 		  break;
 		case 'BonusMeleeAttack':  
-		  str_array.push(`${bonusChatLabel}: ${meleeAttackChatLabel}`);
+		  str_array.push(`${PHRASES.bonus}: ${DIALOG_LABELS.melee_attack}`);
 		  break;
 		  
 	  case 'Attack':
-	    str_array.push(`${attackLabel} (${attackDie})`);
+	    str_array.push(`${PHRASES.attack} (${attackDie})`);
 	    break;
 	    
 	  case 'Attack2':
-	    str_array.push(`${attackLabel} (${attack2Die})`);
+	    str_array.push(`${PHRASES.attack} (${attack2Die})`);
 	    break;
 	  
 	  case 'BonusAttack':
-	    str_array.push(`${bonusChatLabel}: ${attackLabel} (${attackDie})`);
+	    str_array.push(`${PHRASES.bonus}: ${PHRASES.attack} (${attackDie})`);
 	    break;
 	    
 		case 'BonusAttack2':
-	    str_array.push(`${bonusChatLabel}: ${attackLabel} (${attack2Die})`);
+	    str_array.push(`${PHRASES.bonus}: ${PHRASES.attack} (${attack2Die})`);
 	    break;  
 	  
 		case 'CastSpell':
-		  str_array.push(`${castSpellChatLabel}`);
+		  str_array.push(`${DIALOG_LABELS.cast_spell}`);
 		  break;
 		case 'BonusCastSpell':  
-		  str_array.push(`${bonusChatLabel}: ${castSpellChatLabel}`);
+		  str_array.push(`${PHRASES.bonus}: ${DIALOG_LABELS.cast_spell}`);
 		  break; 
 		  
 		case 'CastSpellLevel':
-		  str_array.push(`${castSpellLevelLabel} (${spellLevelText}) (${ACTION_DIE_SIDES.spell} + ${spellLevelDie})`);
+		  // Basic structure: Cast Spell (Level 2) (1d10 + 2)
+		  str_array.push(`${PHRASES.cast_spell} (${spellLevelText}) (${ACTION_DIE_SIDES.spell} + ${spellLevelDie})`);
 		  break;
 		  
 		case 'CastSpell2Level':
-		  str_array.push(`${castSpellLevelLabel} (${spell2LevelText}) (${ACTION_DIE_SIDES.spell} + ${spell2LevelDie})`);
+		  str_array.push(`${PHRASES.cast_spell} (${spell2LevelText}) (${ACTION_DIE_SIDES.spell} + ${spell2LevelDie})`);
 		  break;
 		  
 		case 'BonusCastSpellLevel':
-		  str_array.push(`${bonusChatLabel}: ${castSpellLevelLabel} (${spellLevelText}) (${ACTION_DIE_SIDES.spell} + ${spellLevelDie})`);
+		  str_array.push(`${PHRASES.bonus}: ${PHRASES.cast_spell} (${spellLevelText}) (${ACTION_DIE_SIDES.spell} + ${spellLevelDie})`);
 		  break;
 		  
 		case 'BonusCastSpell2Level':
-		  str_array.push(`${bonusChatLabel}: ${castSpellLevelLabel} (${spell2LevelText}) (${ACTION_DIE_SIDES.spell} + ${spell2LevelDie})`);
+		  str_array.push(`${PHRASES.bonus}: ${PHRASES.cast_spell} (${spell2LevelText}) (${ACTION_DIE_SIDES.spell} + ${spell2LevelDie})`);
 		  break;
 	  
 		case 'Other':    
-		  str_array.push(`${otherChatLabel}: ${other_text}`);
+		  str_array.push(`${PHRASES.other}: ${other_text}`);
 		  break;
 	  
 		case 'Surprise':
-		  str_array.push(`${surpriseChatLabel} (+${surprise})`);
+		  str_array.push(`${PHRASES.surprise} (+${surprise})`);
 		  break;
 		case 'InitiativeBonus':
-		  str_array.push(`${initiativeBonusChatLabel} (+${initBonus})`);
+		  str_array.push(`${PHRASES.init_bonus} (+${initBonus})`);
 		  break;
 		case 'InitiativePenalty':
-		  str_array.push(`${initiativePenaltyChatLabel} (-${initPenalty})`);
+		  str_array.push(`${PHRASES.init_penalty} (-${initPenalty})`);
 		  break;   
 	  
 		case 'Advantage':
-		  str_array.push(`${advantageChatLabel}`);
+		  str_array.push(`${PHRASES.advantage}`);
 		  break;
 		case 'Disadvantage':
-		  str_array.push(`${disadvantageChatLabel}`);
+		  str_array.push(`${PHRASES.advantage}`);
 		  break;
 	
 		default:
