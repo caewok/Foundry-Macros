@@ -15,6 +15,8 @@ Basic XP calculator. Select one or more creatures. Adds up the XP; allows you to
 
 When activated, toggles the Sneak Attack feat passive effect for the selected token, causing all melee and range attacks to add sneak attack damage. In order for this to work, add the sneak attack feature and under effects (using the Dynamic Effects module), add passive effects for Bonuses Melee Weapon Damage and Bonuses Ranged Weapon Damage with value (ceil(@classes.rogue.levels/2))d6. 
 
+![Sneak Attack Screenshot](/images/sneak_attack_screenshot.jpg)
+
 To aid the user and DM, the macro marks the token with the mystery man and activates the macro using Macro marker module.  
 
 ## Greyhawk Initiative
