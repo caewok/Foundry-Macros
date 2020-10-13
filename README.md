@@ -11,6 +11,12 @@ The dialog permits you to enter total xp or individual xps and vary the weights.
 
 Basic XP calculator. Select one or more creatures. Adds up the XP; allows you to de-select or add additional xp for each creature. Ignores PCs.
 
+## Toggle Sneak Attack
+
+When activated, toggles the Sneak Attack feat passive effect for the selected token, causing all melee and range attacks to add sneak attack damage. In order for this to work, add the sneak attack feature and under effects (using the Dynamic Effects module), add passive effects for Bonuses Melee Weapon Damage and Bonuses Ranged Weapon Damage with value (ceil(@classes.rogue.levels/2))d6. 
+
+To aid the user and DM, the macro marks the token with the mystery man and activates the macro using Macro marker module.  
+
 ## Greyhawk Initiative
 
 Polls the list of combatants in the combat tracker. If you own more than one combatant, a dialog will ask you to select one or more. (All entities selected will use the same actions but not necessarily the same rolls.) 
