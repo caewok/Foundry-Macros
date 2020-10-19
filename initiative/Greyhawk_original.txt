@@ -1834,26 +1834,26 @@ function splitDieCommand(die_string) {
  * @combatants One or more combatants from the combat tracker. 
  * @return Nothing.
  */
-async function main(combatants) {
-	let selected_combatants = filterSelectedCombatants(combatants);
-	if(selected_combatants.length < 1) {
-		//console.log("No selected combatants in combat.");
-		// use combatants controlled by user instead
-		selected_combatants = combatants;  
-	}
+async function main(selected_combatants) {
+	// let selected_combatants = filterSelectedCombatants(combatants);
+// 	if(selected_combatants.length < 1) {
+// 		//console.log("No selected combatants in combat.");
+// 		// use combatants controlled by user instead
+// 		selected_combatants = combatants;  
+// 	}
 	//console.log(selected_combatants.length + " combatants selected/owned.");
 
-
+  console.log(selected_combatants);
 	let ids = [];
 	if(selected_combatants.length < 1) {
 	  console.log("No combatants found.");
 	  return;
 	} else if(selected_combatants.length == 1) {
 		console.log("Single combatant found.")
-		ids = selected_combatants._id;
+		ids = selected_combatants[0]._id;
 	} else {
 		// list by PC / NPC. Groups: type, name. 
-		const combatant_selection_html = constructCombatantSelectionHTML(combatants);
+		const combatant_selection_html = constructCombatantSelectionHTML(selected_combatants);
 		//let PCSelection = [];
 		//let CreatureSelection = [];
 		// console.log(combatant_selection_html);
@@ -1880,7 +1880,7 @@ async function main(combatants) {
 	}
 
   selected_combatants = selected_combatants.filter(c => (ids.includes(c._id) ));
-	//console.log(selected_combatants[0]); 
+	console.log(selected_combatants); 
 
 
 
