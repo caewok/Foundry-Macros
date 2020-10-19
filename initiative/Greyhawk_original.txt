@@ -1377,8 +1377,8 @@ function calculateDice(combatant, actionSelections, userInput) {
 	  
 		default:
 	  }
-	  if(die != "") die_strings.push(die);
-	  action_description_array.push(desc);
+	  if(!isBlank(die)) die_strings.push(die);
+	  if(!isBlank(desc)) action_description_array.push(desc);
   
 	}); 
    
