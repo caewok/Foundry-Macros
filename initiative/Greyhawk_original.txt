@@ -1,23 +1,90 @@
 // --------------------------------------
 // SWITCHES
 
+// TO DO:
+// * Pull actor's alert feat, set a default toggle if single actor
+
+
+// Notes:
+// Original greyhawk: OG
+// Weapon die greyhawk: DOG
+// Revised: RG
+// If not indicated, same for all
+
+
+
 // Die sides
-const ACTION_DIE_SIDES = {
-  ranged_attack: "1d4",
-  movement: "1d6",
-  swap_gear: "1d6",
-  other_action: "1d6",
-  melee_attack: "1d8",
-  spell: "1d10"
+let ACTION_DIE_SIDES = {
+  ranged_attack: "1d4", // OG: 1d4
+  movement: "1d6",      // OG: 1d6
+  swap_gear: "1d6",     // OG: 1d6
+  other_action: "1d6",  // OG: 1d6
+  melee_attack: "1d8",  // OG: 1d8
+  spell: "1d10"         // OG: 1d10; RG: 1d8
 };
 
-const REVISED_ATTACK = true;
-const REVISED_SPELL = true;
 
-// Only used if REVISED_ATTACK is true
+// Swap Gear and Other Action are both 1d6, which is duplicative with Movement.
+// Switch to 0 or false to drop those or other action selection options.
+// Set to 1 or true to use the option.
+// Set to a higher integer to add additional options of the same type
+let INCLUDE_ACTIONS = {
+  ranged_attack: 1,   // OG: 1; DOG, RG: 0
+  movement: 1,        // OG: 1
+  swap_gear: 1,       // OG: 1; DOG, RG: 0
+  other_action: 1,    // OG: 1; DOG, RG: 0
+  melee_attack: 1,    // OG: 1; DOG, RG: 0
+  cast_spell: 1,      // OG: 1; DOG, RG: 0
+  
+  // selections for attack die and spell level, respectively
+  attack_die: 0,      // OG: 0; DOG, RG: 2  // 2 so that bonus can be different than regular
+  spell_level: 0,     // OG: 0; DOG, RG: 2
+  
+  ability: 0, // select an ability to use for a bonus/penalty   // OG: 0 // for using swashbuckler, etc.
+  init_bonus: 1, // add straight bonus or penalty to initiative // OG: 1
+  
+  // following should only be true or false
+  // add check to use the following
+  proficiency: false,  // OG: false 
+  advantage: true,     // OG: true 
+  surprise: true,      // OG: true 
+  dexterity: false,    // OG, DOG: false; RG: true
+  //alert: true,
+};
+
+
+const DEFAULT_ACTION_VALUES = {
+  init_bonus: 1,
+  surprise: 10,
+  advantage: "normal",  // normal, advantage, disadvantage
+  ability: "charisma"
+};
+
+//const CHECK_ALERT_FEAT = true;
+
+// const INCLUDE_SWAP_GEAR = false;
+// const INCLUDE_OTHER_ACTION = true;
+
+
+// For dexterity and initiative bonuses, subtract a die roll with sides equal 
+// to the sum of the sides. For example, +2 Dex with a +1 other initiative bonus means
+// 1d3 will be subtracted from the roll. 
+// If the sum is less than 0 (for dexterity or initiative penalties) the roll will be added.
+// Switches will be added for Dexterity bonus as well as a selector for another ability bonus
+// (for example, the Swashbuckler uses Charisma)
+// Initiative bonus and penalty remain. 
+// Requires occasional negative initiative values. 
+let USE_RANDOM_BONUSES = false; // OG, DOG: false; RG: true
+
+
+
+
+
+// Only used if USE_REVISED_ATTACK is true
 // The value must be a valid die roll command.
 // Value will replace ranged_attack or melee_attack die rolls.
 // add selected to the <option> bracket if you want a different default value. (or reorganize)
+// e.g., <option value="1d8" selected>1d8</option>
 const HTML_ATTACK_DIE_OPTIONS = 
 `
 <option value="1d4">1d4</option>
@@ -33,7 +100,7 @@ const HTML_ATTACK_DIE_OPTIONS =
 <option value="1">1</option>a
 `;
 
-// Only used if REVISED_SPELL is true
+// Only used if USE_USE_REVISED_SPELL is true
 // The value must be a valid die roll command.
 // Value will be added to the ACTION_DIE_SIDES.spell die roll (e.g., 1d10 + 5 for a fifth level spell)
 
@@ -98,6 +165,7 @@ Use the largest die that corresponds to any one of the actions you plan to take.
 const PHRASES = {
   action: "Action", 
   attack: "Attack",
+  ability: "Ability",
   bonus: "Bonus",
   bonus_action: "Bonus Action",
   cast_spell: "Cast Spell",
@@ -106,12 +174,21 @@ const PHRASES = {
   none: "None",
   other: "Other",
   other_action: "Other Action",
+  proficiency: "Proficiency",
   ranged_attack: "Ranged Attack",
   surprise: "Surprise",
   swap_gear: "Swap Gear",
   
   init_bonus: "Initiative Bonus",
   init_penalty: "Initiative Penalty",
+  
+  str: "Strength",
+  dex: "Dexterity",
+  con: "Constitution",
+  int: "Intelligence",
+  wis: "Wisdom",
+  cha: "Charisma",
+  
   
   normal: "Normal",
   advantage: "Advantage",
@@ -130,6 +207,16 @@ const DIALOG_LABELS = {
   cast_spell: `${PHRASES.cast_spell} (${ACTION_DIE_SIDES.spell})`
 };
 
+
+/**
+ * Selectively add "+" to positive numbers for printing.
+ * @n Integer
+ * @return String. +n or -n
+ */
+function bonusNumberString(n) {
+  n = parseInt(n);  
+  return `${(n >= 0) ? "+":""}${n}`;
+}
 
 
 // --------------------------------------
@@ -748,246 +835,309 @@ function combineElementsToSummaryString(names) {
 	return joined_str;
 }
 
+
 /**
- * Create the html code to display choices for selecting Greyhawk Initiative actions.
- * Checkboxes for actions; radio buttons for bonus actions; initiative bonus/penalty;
- * advantage/disadvantage; other (die command as string)
- * @names Names of combatants attributed to these actions, per combineElementsToSummaryString.
- * @return html code as string
- */
-function constructDialogInitiativeActionsContent(names = "") {
-  names = combineElementsToSummaryString(names);
+* Create the html code to display choices for selecting Greyhawk Initiative actions.
+* Checkboxes for actions; radio buttons for bonus actions; initiative bonus/penalty;
+* advantage/disadvantage; other (die command as string)
+* @names Names of combatants attributed to these actions, per combineElementsToSummaryString.
+* @return html code as string
+*/
+function constructDialogInitiativeActionsContent(selected_combatants) {
+  const combatant_names = combineElementsToSummaryString(selected_combatants.map(c => c.name));
+  console.log(selected_combatants.length + " combatants: " + combatant_names);
   
-  let row_rangedAttack = 
-  `
-  <tr>
-		<td> <input type="checkbox" id="RangedAttack" class="ActionSelection"/></td>
-		<td> <label for="RangedAttack">${DIALOG_LABELS.ranged_attack}</label></td>
-		<td> <input type="radio" name="BonusAction" id="BonusRangedAttack" class="ActionSelection"/></td>
-	</tr>
-  `;
-  
-  let row_movement = 
-  `
-  <tr>
-		<td> <input type="checkbox" id="Movement" class="ActionSelection"/></td>
-		<td> <label for="Movement">${DIALOG_LABELS.movement}</label></td>
-		<td> <input type="radio" name="BonusAction" id="BonusMovement"act class="ActionSelection"/></td>
- </tr>
-  `;
-  
-  let row_swapGear = 
-  `
-  <tr>
-		<td> <input type="checkbox" id="SwapGear" class="ActionSelection"/></td>
-		<td> <label for="SwapGear">${DIALOG_LABELS.swap_gear}</label></td>
-		<td> <input type="radio" name="BonusAction" id="BonusSwapGear"act class="ActionSelection"/></td>
-	</tr>
-  `;
-  
-  let row_otherAction = 
-  `
-	<tr>
-		<td> <input type="checkbox" id="OtherAction" class="ActionSelection"/></td>
-		<td> <label for="OtherAction">${DIALOG_LABELS.other_action}</label></td>
-		<td> <input type="radio" name="BonusAction" id="BonusOtherAction"act class="ActionSelection"/></td>
-	</tr>
-  `;
-  
-  let row_meleeAttack =
-  `
-  <tr>
-		<td> <input type="checkbox" id="MeleeAttack" class="ActionSelection"/></td>
-		<td> <label for="MeleeAttack">${DIALOG_LABELS.melee_attack}</label></td>
-		<td> <input type="radio" name="BonusAction" id="BonusMeleeAttack"act class="ActionSelection"/></td>
-	</tr>
-  `;
-  
-  let row_castSpell = 
-  `
-  <tr>
-		<td> <input type="checkbox" id="CastSpell" class="ActionSelection"/></td>
-		<td> <label for="CastSpell">${DIALOG_LABELS.cast_spell}</label></td>
-		<td> <input type="radio" name="BonusAction" id="BonusCastSpell"act class="ActionSelection"/></td>
-	</tr>
-  `;
-  
-  let row_attack = ""; 
-  if(REVISED_ATTACK) {
-    row_rangedAttack = "";
-    row_attack = 
-    `
-    <tr>
-			<td> <input type="checkbox" id="Attack" class="ActionSelection"/></td>
-			<td> <label for="Attack">${PHRASES.attack}</label>
-				<select id="AttackDie" name="AttackDie">
-					${HTML_ATTACK_DIE_OPTIONS}
-				</select></td>
-			<td> <input type="radio" name="BonusAction" id="BonusAttack" class="ActionSelection"/></td>   
-		</tr>
-      
+  // actor abilities: combatants[0].actor.data.data.abilities
+	// object with six entries: cha, con, dex, int, str, wis
+	// object values: mod and prof. 
+	// So for dex: combatants[0].actor.data.data.abilities.dex.mod
+	let proficiency = "";
+	if(INCLUDE_ACTIONS.proficiency) {
+	  let prof_bonus_text = "";
+	
+	  if(selected_combatants.length == 1) {
+	    const prof_bonus = parseInt( combatants[0].actor.data.data.attributes.prof );
+	  
+	    prof_bonus_text = 
+	    `
+	    &nbsp(${bonusNumberString(prof_bonus)}) 
+	    `;
+	  
+	  }
+	
+	  proficiency = 
+	  `
+	  <br><input type="checkbox" id="Proficiency" class="ActionSelection" checked/>
+		<label for="Proficiency">${PHRASES.proficiency}${prof_bonus_text}</label>
+	  `;
+	}
+	
+	
+	let dexterity = "";
+	if(INCLUDE_ACTIONS.dexterity) {
+	  let dex_bonus_text = "";
+	  if(selected_combatants.length == 1) {
+	    const dex_bonus = parseInt( combatants[0].actor.data.data.abilities.dex.mod );
+	  
+	    dex_bonus_text = 
+	    `
+	    &nbsp(${bonusNumberString(dex_bonus)}) 
+	    `;
+	  }
+	
+	  dexterity =
+	  `
+    <br><input type="checkbox" id="Dexterity" class="ActionSelection" checked/>
+		<label for="Dexterity">${PHRASES.dex}${dex_bonus_text}</label>
+		`;
+	}
+	
+	let ability = "";
+	for(let i = 0; i < INCLUDE_ACTIONS.ability; i++) {
+	  const ability_options =
+		`
+		<option value="str">${PHRASES.str}</option>
+		<option value="dex">${PHRASES.dex}</option>
+		<option value="con">${PHRASES.con}</option>
+		<option value="int">${PHRASES.int}</option>
+		<option value="wis">${PHRASES.wis}</option>
+		<option value="cha">${PHRASES.cha}</option>
+		`;
+	
+	
+	  ability += 
+	  `
+	  <br><input type="checkbox" id="Ability${i}" class="ActionSelection"/>
+		<label for="Ability${i}">${PHRASES.ability}</label>
+		<select id="AbilitySelection${i}" name="AbilitySelection{i}">
+		${ability_options}
+		</select>
+	  `;
+	}	
+	  
+  // Add one or more of each row type to the action selections
+  // Use the for loop to give a number to each id.
+  let row_rangedAttack = "";
+  for(let i = 0; i < INCLUDE_ACTIONS.ranged_attack; i++) {
+    row_rangedAttack += 
+		`
 		<tr>
-			<td> <input type="checkbox" id="Attack2" class="ActionSelection"/></td>
-			<td> <label for="Attack2">${PHRASES.attack}</label>
-				<select id="Attack2Die" name="Attack2Die">
+			<td> <input type="checkbox" id="RangedAttack${i}" class="ActionSelection"/></td>
+			<td> <label for="RangedAttack${i}">${DIALOG_LABELS.ranged_attack}</label></td>
+			<td> <input type="radio" name="BonusAction" id="BonusRangedAttack${i}" class="ActionSelection"/></td>
+		</tr>
+		`;
+  }
+  
+  let row_movement = "";
+  for(let i = 0; i < INCLUDE_ACTIONS.movement; i++) {
+    row_rangedAttack += 
+		`
+		<tr>
+			<td> <input type="checkbox" id="Movement${i}" class="ActionSelection"/></td>
+			<td> <label for="Movement${i}">${DIALOG_LABELS.movement}</label></td>
+			<td> <input type="radio" name="BonusAction" id="BonusMovement${i}" class="ActionSelection"/></td>
+		</tr>
+		`;
+  }
+  
+  let row_swapGear = "";
+  for(let i = 0; i < INCLUDE_ACTIONS.swap_gear; i++) {
+    row_swapGear += 
+		`
+		<tr>
+			<td> <input type="checkbox" id="SwapGear${i}" class="ActionSelection"/></td>
+			<td> <label for="SwapGear${i}">${DIALOG_LABELS.swap_gear}</label></td>
+			<td> <input type="radio" name="BonusAction" id="BonusSwapGear${i}" class="ActionSelection"/></td>
+		</tr>
+		`;
+  }
+  
+  let row_otherAction = "";
+  for(let i = 0; i < INCLUDE_ACTIONS.other_action; i++) {
+    row_swapGear += 
+		`
+		<tr>
+			<td> <input type="checkbox" id="OtherAction${i}" class="ActionSelection"/></td>
+			<td> <label for="OtherAction${i}">${DIALOG_LABELS.other_action}</label></td>
+			<td> <input type="radio" name="BonusAction" id="BonusOtherAction${i}" class="ActionSelection"/></td>
+		</tr>
+		`;
+  }
+  
+  let row_meleeAttack = "";
+  for(let i = 0; i < INCLUDE_ACTIONS.melee_attack; i++) {
+    row_meleeAttack += 
+		`
+		<tr>
+			<td> <input type="checkbox" id="MeleeAttack${i}" class="ActionSelection"/></td>
+			<td> <label for="MeleeAttack${i}">${DIALOG_LABELS.melee_attack}</label></td>
+			<td> <input type="radio" name="BonusAction" id="BonusMeleeAttack${i}" class="ActionSelection"/></td>
+		</tr>
+		`; 
+  }
+  
+  let row_castSpell = "";
+  for(let i = 0; i < INCLUDE_ACTIONS.cast_spell; i++) {
+    row_castSpell += 
+		`
+		<tr>
+			<td> <input type="checkbox" id="CastSpell${i}" class="ActionSelection"/></td>
+			<td> <label for="CastSpell${i}">${DIALOG_LABELS.cast_spell}</label></td>
+			<td> <input type="radio" name="BonusAction" id="BonusCastSpell${i}" class="ActionSelection"/></td>
+		</tr>
+		`;
+  }
+  
+  let row_attackDie = ""; 
+  for(let i = 0; i < INCLUDE_ACTIONS.attack_die; i++) {
+    row_attackDie += 
+		`
+    <tr>
+			<td> <input type="checkbox" id="Attack${i}" class="ActionSelection"/></td>
+			<td> <label for="Attack${i}">${PHRASES.attack}</label>
+				<select id="AttackDie${i}" name="AttackDie{i}">
 					${HTML_ATTACK_DIE_OPTIONS}
 				</select></td>
-			<td> <input type="radio" name="BonusAction" id="BonusAttack2" class="ActionSelection"/></td>
-		</tr>    
-    `
+			<td> <input type="radio" name="BonusAction" id="BonusAttack${i}" class="ActionSelection"/></td>   
+		</tr>
+		`;
   }
   
-  if(REVISED_SPELL) {
-    row_castSpell = 
-    `
+  let row_spellLevel = ""; 
+  for(let i = 0; i < INCLUDE_ACTIONS.attack_die; i++) {
+    row_spellLevel += 
+		`
     <tr>
-            <td> <input type="checkbox" id="CastSpellLevel" class="ActionSelection"/></td>
-            <td> <label for="CastSpellLevel">${PHRASES.cast_spell}</label>
-                <select id="SpellLevel" name="SpellLevel">
-                ${HTML_SPELL_DIE_OPTIONS}
-                </select></td>
-           
-           </td>
-    
-          </td>
-            <td> <input type="radio" name="BonusAction" id="BonusCastSpellLevel"act class="ActionSelection"/></td>
-         </tr>
-    
-          <tr>
-            <td> <input type="checkbox" id="CastSpell2Level" class="ActionSelection"/></td>
-            <td> <label for="CastSpell2Level">${PHRASES.cast_spell}</label>
-                <select id="Spell2Level" name="Spell2Level">
-                ${HTML_SPELL_DIE_OPTIONS}
-                </select></td>
-           
-           </td>
-            <td> <input type="radio" name="BonusAction" id="BonusCastSpell2Level"act class="ActionSelection"/></td>
-         </tr>
-    
-    `;
-    
-  
+			<td> <input type="checkbox" id="CastSpellLevel${i}" class="ActionSelection"/></td>
+			<td> <label for="CastSpellLevel${i}">${PHRASES.cast_spell}</label>
+					<select id="SpellLevel${i}" name="SpellLevel{i}">
+					${HTML_SPELL_DIE_OPTIONS}
+					</select></td>
+	 
+		 </td>
+
+		</td>
+			<td> <input type="radio" name="BonusAction" id="BonusCastSpellLevel${i}"act class="ActionSelection"/></td>
+	 </tr>
+	 `;
   }
   
-
+  let initBonus = "";
+  for(let i = 0; i < INCLUDE_ACTIONS.init_bonus; i++) {
+		initBonus +=
+		`
+		<br><input type="checkbox" id="InitiativeBonus${i}" class="ActionSelection"/>
+		<label for="InitiativeBonus${i}">${PHRASES.init_bonus}</label>
+		<input type="number" id="InitiativeBonusNumber${i}" min=-99 max=99 step=1 value=${DEFAULT_ACTION_VALUES.init_bonus}>
+		`
+  }
+  
+  let surprise = "";
+  if(INCLUDE_ACTIONS.surprise) {
+    surprise +=
+    `
+    <br><input type="checkbox" id="Surprise" class="ActionSelection"/>
+		<label for="Surprise">${PHRASES.surprise}</label>
+		<input type="number" id="SupriseNumber" min=0 max=99 step=1 value=${DEFAULT_ACTION_VALUES.surprise}>
+		`
+  }
+  
+  let advantage = "";
+  if(INCLUDE_ACTIONS.advantage) {
+    let checked_normal = "";
+    let checked_advantage = "";
+    let checked_disadvantage = "";
+    if(DEFAULT_ACTION_VALUES.advantage == "advantage") {
+      checked_advantage = "checked"
+    } else if(DEFAULT_ACTION_VALUES.advantage == "disadvantage") {
+      checked_disadvantage = "checked"
+    } else {
+      checked_normal = "checked"
+    }
+    
+    if(selected_combatants.length == 1) {
+      const advFlag = selected_combatants[0].actor.getFlag("dnd5e", "initiativeAdv");
+      console.log(advFlag);
+      if(advFlag) {
+        checked_advantage = "checked";
+        checked_normal = "";
+        checked_disadvantage = "";
+      }
+    }
+    
+            
+    advantage +=
+		`
+		<input type="radio" id="Normal" name="AdvDis" class="ActionSelection" ${checked_normal}/>
+		<label for="Normal">${PHRASES.normal}</label> 
+		<input type="radio" id="Advantage" name="AdvDis" class="ActionSelection" ${checked_advantage}/>
+		<label for="Advantage">${PHRASES.advantage}</label> 
+		<input type="radio" id="Disadvantage" name="AdvDis" class="ActionSelection" ${checked_disadvantage}/>
+		<label for="Disadvantage">${PHRASES.disadvantage}</label> 
+		`
+  }  
   const dialogInitiativeActionsContent = 
-`
-<h3> ${titleLabel} </h3> 
-<p>${selectActionsParagraph}</p>
-<p><em> ${names} </em></p>
-<form>
-  <table>
-    <thead>
-         <tr>
-            <th style="text-align:left">${PHRASES.action}</th>
-            <th colspan=2 style="text-align:right">${PHRASES.bonus_action}</th>
-         </tr>
-      
-         <tr>
-           <td> </td>
-           <td style="text-align:right"> <label for="None">${PHRASES.none}</label></td>
-           <td> <input type="radio" name="BonusAction" id="BonusNone" class="ActionSelection" checked/></td>
-         </tr>
-         
-         ${row_attack}
-         ${row_rangedAttack}
-         ${row_movement}
-         ${row_swapGear}
-         ${row_otherAction}
-    		 ${row_meleeAttack}
-    		 ${row_castSpell}
-        
-         <tr>
-           <td> <input type="checkbox" id="Other" class="ActionSelection"/> </td>
-           <td colspan=2> <label for="Other">${PHRASES.other}</label> <input type="text" id="OtherText"/></td>
-           
-         </tr>
-      
-
-        
-      </table> 
-  
-
-  
-  <br><input type="checkbox" id="InitiativeBonus" class="ActionSelection"/>
-  <label for="InitiativeBonus">${PHRASES.init_bonus}</label>
-  <input type="number" id="InitiativeBonusNumber" min=0 max=99 step=1 value=1>
- 
-  <br><input type="checkbox" id="InitiativePenalty" class="ActionSelection"/>
-  <label for="InitiativePenalty">${PHRASES.init_penalty}</label>
-  <input type="number" id="InitiativePenaltyNumber" min=0 max=99 step=1 value=1>  
-  
-  <br><input type="checkbox" id="Surprise" class="ActionSelection"/>
-  <label for="Surprise">${PHRASES.surprise}</label>
-  <input type="number" id="SupriseNumber" min=0 max=99 step=1 value=10>
-
-  <br>
-  
-  <br><input type="radio" id="Normal" name="AdvDis" class="ActionSelection" Checked/>
-  <label for="Normal">${PHRASES.normal}</label> 
-  <input type="radio" id="Advantage" name="AdvDis" class="ActionSelection"/>
-  <label for="Advantage">${PHRASES.advantage}</label> 
-  <input type="radio" id="Disadvantage" name="AdvDis" class="ActionSelection"/>
-  <label for="Disadvantage">${PHRASES.disadvantage}</label> 
-    
-  <br>
-    
-  <br><input type="reset" id="resetButton" class="resetButton">
-    </form>
-    
-  <p>
-    <em>${selectActionsBonusParagraph}</em>
-    <br><br>
-    <em>${selectActionsAdvDisParagraph}</em> 
-      
-    <br><br>
-    ${selectActionsMultipleParagraph}
-  </p>
-  
-`
+	`
+	<h3> ${titleLabel} </h3> 
+	<p>${selectActionsParagraph}</p>
+	<p><em> ${combatant_names} </em></p>
+	<form>
+		<table>
+			<thead>
+					 <tr>
+							<th style="text-align:left">${PHRASES.action}</th>
+							<th colspan=2 style="text-align:right">${PHRASES.bonus_action}</th>
+					 </tr>
+			
+					 <tr>
+						 <td> </td>
+						 <td style="text-align:right"> <label for="None">${PHRASES.none}</label></td>
+						 <td> <input type="radio" name="BonusAction" id="BonusNone" class="ActionSelection" checked/></td>
+					 </tr>
+				 
+					 ${row_attackDie}
+					 ${row_rangedAttack}
+					 ${row_movement}
+					 ${row_swapGear}
+					 ${row_otherAction}
+					 ${row_meleeAttack}
+					 ${row_castSpell}
+					 ${row_spellLevel}
+				
+					 <tr>
+						 <td> <input type="checkbox" id="Other" class="ActionSelection"/> </td>
+						 <td colspan=2> <label for="Other">${PHRASES.other}</label> <input type="text" id="OtherText"/></td>
+					 
+					 </tr>
+			
+				</table> 
+	
+    ${initBonus}
+		${surprise}
+		${dexterity}
+		${ability}
+		${proficiency}
+		<br>
+		<br>
+		${advantage}
+		<br>
+		
+		<br><input type="reset" id="resetButton" class="resetButton">
+			</form>
+		
+		<p>
+			<em>${selectActionsBonusParagraph}</em>
+			<br><br>
+			<em>${selectActionsAdvDisParagraph}</em> 
+			
+			<br><br>
+			${selectActionsMultipleParagraph}
+		</p>
+	
+	`;
   return dialogInitiativeActionsContent;
 
-}
-
-/**
- * Create the dice command and associated action descriptions for the chosen actions.
- * @actionSelections One or more actions selected by the user in the action selection dialog.
- * @otherText Any text input by the user, which will be interpreted as dice commands.
- * @initBonus Initiative bonus chosen by user. Assumed to be 0 or more. Only used if Initiative Bonus was checked (in actionSelections).
- * @initPenalty Initiative penalty chosen by user. Assumed to be 0 or more. Only used if Initiative Penalty was checked (in actionSelections). 
- * @surprise Surprise penalty chosen by user. Only used if Surprise was checked (in actionSelections).
- * @return The die roll command for the initiative and the description string for the actions.
- */
-function constructInitiativeRoll(actionSelections, otherText, initBonus = 1, initPenalty = 1, surprise = 10, attackDie = "", attack2Die = "", spellLevelDie = "", spell2LevelDie = "", spellLevelText = "", spell2LevelText = "") {
-  //console.log("actionSelections.Length: " + actionSelections.length);
-  //console.log("actionSelections (0): " + actionSelections[0].id + " " + actionSelections[0].checked);
-  //console.log("actionSelections (1): " + actionSelections[1].id + " " + actionSelections[1].checked);
-  
-  //console.log("Other text: " + otherText);
-  //console.log("initBonus: " + initBonus);
-  //console.log("initPenalty: " + initPenalty);
-  //console.log("surprise: " + surprise);
-  
-  var actionPool = [];
-  for(var i = 0; i < actionSelections.length; i++) {
-    //console.log("\t selection id: " + actionSelections[i].id);
-    //console.log("\t selection is checked: " + actionSelections[i].checked);
-    if(actionSelections[i].checked) {
-      //console.log("\tAdding " + actionSelections[i].id)
-      actionPool.push(actionSelections[i].id);
-    }
-  }
-  
-  //console.log("actionPool: " + actionPool);
-  //console.log("attackDie: " + attackDie + "; attack2Die: " + attack2Die);
-  //console.log("spellLevelText: " + spellLevelText + " spell2LevelText: " + spell2LevelText);
-  let dice = calculateDice(actionPool, otherText, initBonus, initPenalty, surprise, attackDie, attack2Die, spellLevelDie, spell2LevelDie);
-  let init_roll = constructInitiativeRollCommand(dice); 
-  
-  const action_str = TranslateActionPoolSelections(actionPool, otherText, initBonus, initPenalty, surprise, attackDie, attack2Die, spellLevelDie, spell2LevelDie, spellLevelText, spell2LevelText);
-  //console.log(action_str);
-  
-  return { init_roll, action_str };
 }
 
 /** 
@@ -1024,6 +1174,8 @@ function constructInitiativeRollCommand(dice) {
 	return command_string;
 }
 
+
+
 /**
  * Determine the various dice needed to accomplish the selected actions.
  * @actionPool One or more actions selected by the user in the action selection dialog.
@@ -1033,149 +1185,211 @@ function constructInitiativeRollCommand(dice) {
  * @surprise Surprise penalty chosen by user. Only used if Surprise was checked (in actionSelections).
  * @return Array of DieRoll objects corresponding to the necessary die rolls required.
  */
-function calculateDice(actionPool, other_text = "", initBonus = 1, initPenalty = 1, surprise = 10, attackDie = "", attack2Die = "", spellLevelDie = "", spell2LevelDie = "") {
-	//console.log("CalculateDice");
-	//console.log(actionPool);
-  //console.log("attackDie: " + attackDie + "; attack2Die: " + attack2Die);
+function calculateDice(combatant, actionSelections, userInput) {
+	console.log("CalculateDice");
+	console.log("Combatant " + combatant._id);
+	console.log(actionSelections.length + " actionSelections");
+	console.log(userInput);
   
-	var die_strings = [];
-	var initiative_bonus = false;
-	var initiative_penalty = false;
-	var advantage_type = "normal";
-	actionPool.forEach( function(action) {
-	  switch(action) {
-		case 'RangedAttack':
-		case 'BonusRangedAttack':  
-		  die_strings.push(ACTION_DIE_SIDES.ranged_attack);
-		  break;
+  let action_description_array = [];
+  
+	let die_strings = [];
+	let initiative_bonus = 0;
+	let advantage_type = "normal";
+	
+	// Cases:
+	// √ rangedAttack: RangedAttack[#] 
+	// √ movement: Movement[#]
+	// √ swapGear: SwapGear[#]
+	// √ otherAction: OtherAction[#] 
+	// √ meleeAttack: MeleeAttack[#]
+	// √ castSpell: CastSpell[#]
+	
+	// userInputs:
+	// √ attackDie: Attack[#], AttackDie[#] (userInput.attack[])
+	// √ spellLevel: CastSpellLevel[#], SpellLevel[#] (userInput.spell[])
+	// √ other: Other, OtherText (userInput.other_text)
+	// √ initBonus: InitiativeBonus[#], InitiativeBonusNumber[#] (userInput.init_bonus[])
+	// √ surprise: Surprise[#], SurpriseNumber# (userInput.surprise)
+	
+	// combatant-based:
+	// dexterity: Dexterity
+	// ability: Ability[#], AbilitySelection[#] (userInput.ability[])
+	// proficiency: Proficiency
+	
+	// Other:
+	// √ advantage: Normal/Advantage/Disadvantage
+   
+   		
+	const index_regexp = /\d+$/;
+	const action_regexp = /^(.*)\d+$/;
+
+	let actionPool_i = [];
+	let actions = [];
+	// Select only the checked actions
+	// separate the number, if any, from the action name
+	actionSelections.each(function(index, a) {
+	  //console.log(index + ": " + a.id);
+	  //console.log(a);
+	  if(a.checked) {	  
+	    console.log("\tAdding " + a.id);
+			actionPool_i.push(parseInt( a.id.match(index_regexp) ));
+			actions.push(a.id.replace(action_regexp, '$1'));	
+	  }
+	
+	});
+	console.log(actionPool_i);
+	console.log(actions);
+	
+	actions.forEach( function(action, i) {
+	  let desc = "";
+	  let die = "";
+	  let bonus = 0;
+	  let spell_level_desc = "";
+	  let spell_level_die = "";
+	  let chosen_ability = "";
 	  
-		case 'Movement':
-		case 'BonusMovement': 
-		  die_strings.push(ACTION_DIE_SIDES.movement);
-		  break;
-		   
-		case 'SwapGear':
-		case 'BonusSwapGear':
-		  die_strings.push(ACTION_DIE_SIDES.swap_gear);
+	  // Bonus actions described by Bonus: Action. 
+	  if(action.includes("Bonus") && !action.includes("BonusNone")) desc = `${PHRASES.bonus}: `;
+	  
+	  switch(action) {
+	  
+	  case 'BonusRangedAttack':  
+		case 'RangedAttack':
+		  die = ACTION_DIE_SIDES.ranged_attack;		
+		  desc += `${DIALOG_LABELS.ranged_attack}`;
 		  break;
 		  
+		case 'BonusMovement':   
+		case 'Movement':
+		  die = ACTION_DIE_SIDES.movement;
+		  desc += `${DIALOG_LABELS.movement}`;
+		  break;
+		   
+		case 'BonusSwapGear':
+		case 'SwapGear':
+		  die = ACTION_DIE_SIDES.swap_gear;
+		  desc += `${DIALOG_LABELS.swap_gear}`;
+		  break;
+		  
+		case 'BonusOtherAction':   
 		case 'OtherAction':
-		case 'BonusOtherAction':  
-		  die_strings.push(ACTION_DIE_SIDES.other_action);
+		  die = ACTION_DIE_SIDES.other_action;
+		  desc += `${DIALOG_LABELS.other_action}`;
 		  break;
 	
+	  case 'BonusMeleeAttack':
 		case 'MeleeAttack':
-		case 'BonusMeleeAttack':  
-		  die_strings.push(ACTION_DIE_SIDES.melee_attack);
+		  die = ACTION_DIE_SIDES.melee_attack;
+		  desc += `${DIALOG_LABELS.melee_attack}`;
 		  break; 
 	  
+	  case 'BonusCastSpell':
 		case 'CastSpell':
-		case 'BonusCastSpell':  
+		  desc += `${DIALOG_LABELS.cast_spell}`;
 		  die_strings.push(ACTION_DIE_SIDES.spell);
 		  break; 
 		  
+		
+		// Cases that require pulling from the userInput data.
+		// actionPool_i contains the number of the action. e.g., Attack1 or CastSpellLevel2.
+		// The associated user input is that number minus 1 (0-indexed).  
+		case 'BonusAttack':
 		case 'Attack':
-		  die_strings.push(attackDie);
-		  break;
-	  
-	  case 'Attack2':
-	    die_strings.push(attack2Die);
-	    break;  
-	    
-	  case 'BonusAttack':
-			die_strings.push(attackDie);
+		  die = userInput.attack[actionPool_i[i]];
+		  desc += `${PHRASES.attack} (${die})`;
 		  break;
 		  
-		case 'BonusAttack2':
-		  die_strings.push(attack2Die);
-	    break;
-	  
-	  case 'CastSpellLevel':
-	    die_strings.push([ACTION_DIE_SIDES.spell]);
-	    if(!isBlank(spellLevelDie)) {
-	       die_strings.push(spellLevelDie);
-	    }
-	    break;
-	  
-		case 'CastSpell2Level':
-	    die_strings.push([ACTION_DIE_SIDES.spell]);
-	    if(!isBlank(spell2LevelDie)) {
-	       die_strings.push(spell2LevelDie);
-	    }
-	    break;
-	    
 		case 'BonusCastSpellLevel':
-	    die_strings.push([ACTION_DIE_SIDES.spell]);
-	    if(!isBlank(spellLevelDie)) {
-	       die_strings.push(spellLevelDie);
-	    }
-	    break;
+	  case 'CastSpellLevel':
+	    //console.log("i: " + i);
+	    //console.log("\tSpell user input index: " + actionPool_i[i]);
+	    //console.log(userInput.spell[actionPool_i[i]]);
+	    spell_level_die = Object.values(userInput.spell[actionPool_i[i]])[0];
+	    console.log("\tSpell Level: " + spell_level_die);
 	    
-		case 'BonusCastSpell2Level':
-	    die_strings.push([ACTION_DIE_SIDES.spell]);
-	    if(!isBlank(spell2LevelDie)) {
-	       die_strings.push(spell2LevelDie);
+	    if(!isBlank(spell_level_die) & spell_level_die != "0") {
+				if(spell_level_die.charAt(1) == "-" || spell_level_die.charAt(1) == "+") {
+					// use the existing operator for the spell level die or modifier
+					die = ACTION_DIE_SIDES.spell + spell_level_die;
+				
+				} else {
+					// assume addition for the spell level die or modifier
+					die = ACTION_DIE_SIDES.spell + " + " + spell_level_die;
+				}
+	    } else {
+	      die = ACTION_DIE_SIDES.spell;
 	    }
+	    console.log("Spell level die: " + die);
+	     	    
+	    spell_level_desc = Object.keys(userInput.spell[actionPool_i[i]])[0];
+	    console.log("\tSpell description: " + spell_level_desc);
+	    desc += `${PHRASES.cast_spell} (${spell_level_desc}) (${die})`;
 	    break;
 	  
 		case 'Other':     
-		  die_strings.push( other_text );     
+		  die = userInput.other_text;
+		  desc += `${PHRASES.other} (${die})`;
 		  break;   
 	  
-		case 'Surprise':
-		  surprise = parseInt( surprise );
-		  die_strings.push( surprise );
-		  break;
-		case 'InitiativeBonus':
-		  initiative_bonus = true;
-		  initBonus = parseInt( initBonus );
-		  break;
-		case 'InitiativePenalty':
-		  initiative_penalty = true;
-		  initPenalty = parseInt( initPenalty );
-		  break;   
-	  
-		case 'Advantage':
+	  // Advantage/Disadvantage. Only one should be checked.
+	  case 'Advantage':
 		  advantage_type = "advantage";
+		  desc += `${PHRASES.advantage}`;
 		  break;
 		case 'Disadvantage':
 		  advantage_type = "disadvantage";
+		  desc += `${PHRASES.disadvantage}`;
 		  break;
-	
+	  
+	  // Initiative bonuses / penalties
+		case 'Surprise':
+		  // Surprise is always added as a straight penalty 
+		  die = userInput.surprise;
+		  desc += `${PHRASES.surprise} (${bonusNumberString(die)})`;	
+		  break;
+		    
+		case 'InitiativeBonus':
+		  bonus = userInput.init_bonus[actionPool_i[i]];
+		  initiative_bonus += parseInt(bonus);
+		  desc += `${PHRASES.init_bonus} (${bonusNumberString(bonus)})`;
+		  break;
+		
+	  // Combatant-specific bonuses/penalties
+	  case 'Dexterity':
+	    bonus = combatant.actor.data.data.abilities.dex.mod;
+	    initiative_bonus += parseInt( bonus );
+	    desc += `${PHRASES.dex} (${bonusNumberString(bonus)})`;
+	    break;
+	  case 'Ability':
+	    chosen_ability = userInput.ability[actionPool_i[i]]; // str, dex, con, int, wis, cha
+	    console.log("Chosen ability: " + chosen_ability);
+      bonus = combatant.actor.data.data.abilities[chosen_ability].mod;
+      initiative_bonus += parseInt( bonus );
+      desc += `${PHRASES[chosen_ability]} (${bonusNumberString(bonus)})`;  
+      break;
+    case 'Proficiency':
+      bonus = combatant.actor.data.data.attributes.prof;
+      console.log("Proficiency: " + bonus);
+      initiative_bonus += parseInt( bonus );
+      desc += `${PHRASES.proficiency} (${bonusNumberString(bonus)})`;
+      break;
+	  
 		default:
 	  }
+	  if(die != "") die_strings.push(die);
+	  action_description_array.push(desc);
   
 	}); 
    
-	//console.log("\tDie strings: " + die_strings);
+	console.log("\tDie strings: ");
+	console.log(die_strings);
+	console.log("\tDescription: ");
+	console.log(action_description_array);
 	var dice = createDiceArray(die_strings);
-
-	if(initiative_bonus) {
-	  // find the highest die; step side down by one increment (-2 sides) for each bonus
-	  const largest_index = largestDie(dice);
-	  //console.log("Applying +" + initBonus + " initiative bonus to die " + dice[largest_index].original_string);
-   
-    if(!isBlank(largest_index)) {
-			for(var i=0; i < initBonus; i++) {
-				dice[largest_index].decreaseSides();
-			}
-	  }
-	  //console.log("Resulting die sides: " + dice[largest_index].sides);
-	}
-
-	if(initiative_penalty) {
-	  // find the smallest die; step side up by one increment (+2 sides) for each penalty
-	  const smallest_index = smallestDie(dice);
-	  //console.log("Applying -" + initPenalty + " initiative penalty to die " + dice[smallest_index].original_string);
-	  
-	  if(!isBlank(smallest_index)) {
-			for(var i=0; i < initPenalty; i++) {
-				dice[smallest_index].increaseSides();
-			}
-	  }
-	  //console.log("Resulting die sides: " + dice[smallest_index].sides);
-	}
-
+	console.log(dice);
+	
+	// Do adv/dis before init bonus. Otherwise, the init bonus could be largest die. 
 	if(advantage_type === "advantage") {
 	  // find the highest die, roll with disadvantage in order to keep lowest
 	  const largest_index = largestDie(dice);
@@ -1188,125 +1402,57 @@ function calculateDice(actionPool, other_text = "", initBonus = 1, initPenalty =
 	  dice[largest_index].advantage();
 	}
 
-	return dice;
-}
-
-/**
- * Describe the selected actions for use in the initiative roll chat message.
- * @actionPool One or more actions selected by the user in the action selection dialog.
- * @otherText Any text input by the user, which will be interpreted as dice commands.
- * @initBonus Initiative bonus chosen by user. Assumed to be 0 or more. Only used if Initiative Bonus was checked (in actionSelections).
- * @initPenalty Initiative penalty chosen by user. Assumed to be 0 or more. Only used if Initiative Penalty was checked (in actionSelections). 
- * @surprise Surprise penalty chosen by user. Only used if Surprise was checked (in actionSelections).
- * @return HTML string, as a bulleted list of actions.
- */
-function TranslateActionPoolSelections(actionPool, other_text = "", initBonus = 1, initPenalty = 1, surprise = 10, attackDie = "", attack2Die = "", spellLevelDie = "", spell2LevelDie = "", spellLevelText = "", spell2LevelText = "") {
-  let str_array = [];
-  console.log("spellLevelText: " + spellLevelText + " spell2LevelText: " + spell2LevelText);
-
-	actionPool.forEach( function(action) {
-	   switch(action) {
-		case 'RangedAttack':
-		  str_array.push(`${DIALOG_LABELS.ranged_attack}`);
-		  break;
-		case 'BonusRangedAttack':  
-		  str_array.push(`${PHRASES.bonus}: ${DIALOG_LABELS.ranged_attack}`);
-		  break;
-		case 'Movement':
-		  str_array.push(`${DIALOG_LABELS.movement}`);
-		  break;
-		case 'BonusMovement':  
-		  str_array.push(`${PHRASES.bonus}: ${DIALOG_LABELS.movement}`);
-		  break;
-		case 'SwapGear':
-		  str_array.push(`${DIALOG_LABELS.swap_gear}`);
-		  break;
-		case 'BonusSwapGear':
-		  str_array.push(`${PHRASES.bonus}: ${DIALOG_LABELS.swap_gear}`);
-		  break;
-		case 'OtherAction':
-		  str_array.push(`${DIALOG_LABELS.other_action}`);
-		  break;
-	  case 'BonusOtherAction':
-		  str_array.push(`${PHRASES.bonus}: ${DIALOG_LABELS.other_action}`);
-		  break;    
-		case 'MeleeAttack':
-		  str_array.push(`${DIALOG_LABELS.melee_attack}`);	
-		  break;
-		case 'BonusMeleeAttack':  
-		  str_array.push(`${PHRASES.bonus}: ${DIALOG_LABELS.melee_attack}`);
-		  break;
-		  
-	  case 'Attack':
-	    str_array.push(`${PHRASES.attack} (${attackDie})`);
-	    break;
+	if(initiative_bonus != 0) {
+	  if(USE_RANDOM_BONUSES) {
+	    // lower is better, so subtract if bonus is positive
+	    // die sides equal to the absolute value of the bonus. e.g. +3 is -1d3. 
+	    console.log("Using random bonus for initiative " + bonusNumberString(initiative_bonus));
+	    const init_die = new DieRoll(1, Math.abs(initiative_bonus), "", ((initiative_bonus > 0) ? "-":"+"), "");
+	    console.log(init_die);
 	    
-	  case 'Attack2':
-	    str_array.push(`${PHRASES.attack} (${attack2Die})`);
-	    break;
+	    dice.push(init_die);
 	  
-	  case 'BonusAttack':
-	    str_array.push(`${PHRASES.bonus}: ${PHRASES.attack} (${attackDie})`);
-	    break;
+	  } else {
+	  
+	    if(initiative_bonus > 0) {
+	      console.log("Applying initiative bonus " + initiative_bonus + " to largest die.")
+				const largest_index = largestDie(dice);
+				//console.log("Applying +" + initBonus + " initiative bonus to die " + dice[largest_index].original_string);
+   
+				if(!isBlank(largest_index)) {
+					for(var i=0; i < initiative_bonus; i++) {
+						dice[largest_index].decreaseSides();
+					}
+				}
+				//console.log("Resulting die sides: " + dice[largest_index].sides);
+			
+	    } else if(initiative_bonus < 0) {
+	       console.log("Applying initiative penalty " + initiative_bonus + " to largest die.")
+				// find the smallest die; step side up by one increment (+2 sides) for each penalty
+				const smallest_index = smallestDie(dice);
+				//console.log("Applying -" + initPenalty + " initiative penalty to die " + dice[smallest_index].original_string);
+
+				if(!isBlank(smallest_index)) {
+					for(var i=0; i > initiative_bonus; i--) {
+						dice[smallest_index].increaseSides();
+					}
+				}
+				//console.log("Resulting die sides: " + dice[smallest_index].sides);
 	    
-		case 'BonusAttack2':
-	    str_array.push(`${PHRASES.bonus}: ${PHRASES.attack} (${attack2Die})`);
-	    break;  
+	    }
 	  
-		case 'CastSpell':
-		  str_array.push(`${DIALOG_LABELS.cast_spell}`);
-		  break;
-		case 'BonusCastSpell':  
-		  str_array.push(`${PHRASES.bonus}: ${DIALOG_LABELS.cast_spell}`);
-		  break; 
-		  
-		case 'CastSpellLevel':
-		  // Basic structure: Cast Spell (Level 2) (1d10 + 2)
-		  str_array.push(`${PHRASES.cast_spell} (${spellLevelText}) (${ACTION_DIE_SIDES.spell} + ${spellLevelDie})`);
-		  break;
-		  
-		case 'CastSpell2Level':
-		  str_array.push(`${PHRASES.cast_spell} (${spell2LevelText}) (${ACTION_DIE_SIDES.spell} + ${spell2LevelDie})`);
-		  break;
-		  
-		case 'BonusCastSpellLevel':
-		  str_array.push(`${PHRASES.bonus}: ${PHRASES.cast_spell} (${spellLevelText}) (${ACTION_DIE_SIDES.spell} + ${spellLevelDie})`);
-		  break;
-		  
-		case 'BonusCastSpell2Level':
-		  str_array.push(`${PHRASES.bonus}: ${PHRASES.cast_spell} (${spell2LevelText}) (${ACTION_DIE_SIDES.spell} + ${spell2LevelDie})`);
-		  break;
-	  
-		case 'Other':    
-		  str_array.push(`${PHRASES.other}: ${other_text}`);
-		  break;
-	  
-		case 'Surprise':
-		  str_array.push(`${PHRASES.surprise} (+${surprise})`);
-		  break;
-		case 'InitiativeBonus':
-		  str_array.push(`${PHRASES.init_bonus} (+${initBonus})`);
-		  break;
-		case 'InitiativePenalty':
-		  str_array.push(`${PHRASES.init_penalty} (-${initPenalty})`);
-		  break;   
-	  
-		case 'Advantage':
-		  str_array.push(`${PHRASES.advantage}`);
-		  break;
-		case 'Disadvantage':
-		  str_array.push(`${PHRASES.advantage}`);
-		  break;
-	
-		default:
 	  }
-	}); 
-	  
-	const str = "<ul><li>" + str_array.join("</li><li>") + "</ul>";  
-	  
-  return str;
-	  
+	
+	}
+	
+	const action_description = "<ul><li>" + action_description_array.join("</li><li>") + "</ul>"; 
+	console.log(dice);
+	console.log(action_description);
+
+	return { dice, action_description };
 }
+
+
   
 /**
  * Create array of DieRoll objects from an array of die command strings.
@@ -1699,13 +1845,12 @@ async function main(combatants) {
 
 
 	let ids = [];
-	if(selected_combatants.length == 1) {
-		//console.log("Single combatant found.")
-		ids = selected_combatants._id;
-	} else if(selected_combatants.length < 1) {
+	if(selected_combatants.length < 1) {
 	  console.log("No combatants found.");
 	  return;
-	
+	} else if(selected_combatants.length == 1) {
+		console.log("Single combatant found.")
+		ids = selected_combatants._id;
 	} else {
 		// list by PC / NPC. Groups: type, name. 
 		const combatant_selection_html = constructCombatantSelectionHTML(combatants);
@@ -1725,24 +1870,21 @@ async function main(combatants) {
 			const PCSelection = (res.find('[class=PCsSelection]'));
 			const CreatureSelection = (res.find('[class=CreaturesSelection]'));
 			ids = getSelectionIDs(PCSelection, CreatureSelection);
-			selected_combatants = selected_combatants.filter(c => (ids.includes(c._id) ));
 		}
-	
 	}
-
-	// console.log(combatants[0]); 
-
-	//console.log(ids);
-	if(ids.length < 1) {
+	
+	console.log(ids);
+	if(isBlank(ids) || ids.length < 1) {
 		console.log("No combatants selected.");
 		return;
 	}
 
+  selected_combatants = selected_combatants.filter(c => (ids.includes(c._id) ));
+	//console.log(selected_combatants[0]); 
 
-	const combatant_names = selected_combatants.map(c => c.name);
-	//console.log("Combatant names: " + combatant_names);
 
-	const initiative_dialog_content = constructDialogInitiativeActionsContent(combatant_names);
+
+	const initiative_dialog_content = constructDialogInitiativeActionsContent(selected_combatants);
 	//console.log(initiative_dialog_content);
 
 	const res = await dialogPromise(initiative_dialog_content);
@@ -1753,50 +1895,84 @@ async function main(combatants) {
 	  console.log("No actions selected.");
 	  return;
 	}
-
-	
-	const otherText = res.find('[id=OtherText]')[0].value;
-	const initBonus = res.find('[id=InitiativeBonusNumber]')[0].value;
-	const initPenalty = res.find('[id=InitiativePenaltyNumber]')[0].value;
-	const surprise = res.find('[id=SupriseNumber]')[0].value;
-	console.log("\totherText: " + otherText + "\n\tinitBonus: " + initBonus + "\n\tinitPenalty: " + initPenalty + "\n\tsurprise: " + surprise);
 	
 	
-	let attackDie = "";
-	let attack2Die = "";
-	if(REVISED_ATTACK) {
-	  attackDie = res.find('[id=AttackDie]')[0].value;
-	  attack2Die = res.find('[id=Attack2Die]')[0].value;
-	  console.log("attackDie: " + attackDie + "; attack2Die: " + attack2Die);
-	}
-	
-	let spellLevelDie = "";
-	let spell2LevelDie = "";
-	let spellLevelText = "";
-	let spell2LevelText = "";
-	if(REVISED_SPELL) {
-	  const spellLevel = res.find('[id=SpellLevel]')[0];
-    const spell2Level = res.find('[id=Spell2Level]')[0];	
-
-	  spellLevelDie = spellLevel.value;
-	  spell2LevelDie = spell2Level.value;
-	
-	  spellLevelText = spellLevel.options[spellLevel.selectedIndex].text;
-	  spell2LevelText = spell2Level.options[spell2Level.selectedIndex].text;
+	let userInput = {
+	  other_text: res.find('[id=OtherText]')[0].value,
+	  surprise: parseInt( res.find('[id=SupriseNumber]')[0].value ),
 	  
-	  console.log("spellLevelDie: " + spellLevelDie + "; spellLevelText: " + spellLevelText);
-	  console.log("spell2LevelDie: " + spell2LevelDie + "; spell2LevelText: " + spell2LevelText);  
-	}
+	  init_bonus: [],
+	  attack: [],
+	  spell: [],
+	  ability: []
+	  
+	};
 	
-	const { init_roll, action_str } = constructInitiativeRoll(actionSelections, otherText, initBonus, initPenalty, surprise, attackDie, attack2Die, spellLevelDie, spell2LevelDie, spellLevelText, spell2LevelText);
+	// id^= means starts with
+	// https://stackoverflow.com/questions/1206739/find-all-elements-on-a-page-whose-element-id-contains-a-certain-text-using-jquer	
+	res.find('[id^=AttackDie]').each( function(i, id) {
+	  userInput.attack.push(id.value);
+	});
+	
+	res.find('[id^=SpellLevel]').each( function(i, id) {
+	  let obj = {}
+	  obj[id.options[id.selectedIndex].text] = id.value; // could be integer (e.g., 5) or string (e.g., 1d5)
+	  userInput.spell.push(obj);
+	});
+
+	res.find('[id^=InitiativeBonusNumber]').each( function(i, id) {
+	  userInput.init_bonus.push(parseInt( id.value ));
+	});
+	
+	res.find('[id^=AbilitySelection]').each( function(i, id) {
+	  userInput.ability.push(id.value);
+	});
+	
+  
+  const selections = [];
+  actionSelections.each(s => selections.push(s.id));
+  //console.log(actionSelections);
+	console.log(userInput);
+	
+	
+// 	constructInitiativeRoll(c, actionSelections, userInput);  var actionPool = [];
+//   for(var i = 0; i < actionSelections.length; i++) {
+//     //console.log("\t selection id: " + actionSelections[i].id);
+//     //console.log("\t selection is checked: " + actionSelections[i].checked);
+//     if(actionSelections[i].checked) {
+//       //console.log("\tAdding " + actionSelections[i].id)
+//       actionPool.push(actionSelections[i].id);
+//     }
+//   }
+	
+	// actor abilities: combatants[0].actor.data.data.abilities
+	// object with six entries: cha, con, dex, int, str, wis
+	// object values: mod and prof. 
+	// So for dex: combatants[0].actor.data.data.abilities.dex.mod
+	selected_combatants.forEach( function(c) {
+	  console.log(c);
+	  console.log("Combatant " + c._id);
+	
+		let { dice, action_description } = calculateDice(c, actionSelections, userInput);
+		console.log(dice);
+		console.log(action_description);
+		
+	  const init_roll = constructInitiativeRollCommand(dice);
+	  console.log(init_roll); 
+     
+	  doInitiative(c._id, init_roll, action_description);
+	});
+	
+	
+	//const { init_roll, action_str } = constructInitiativeRoll(actionSelections, otherText, initBonus, initPenalty, surprise, attackDie, attack2Die, spellLevelDie, spell2LevelDie, spellLevelText, spell2LevelText);
 
 	//console.log(action_str);
 
 
 	//console.log("Rolling " + init_roll);
-	doInitiative(ids, init_roll, action_str);
+	//doInitiative(ids, init_roll, action_str);
 	//console.log("Done!");
-
+  
 }
 
 // Preliminary checks 
