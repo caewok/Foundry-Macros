@@ -1174,7 +1174,7 @@ async function doInitiative(ids, init_roll, actions = "") {
     ui.notifications.warn('${errorNoActiveCombatTracker}');
     return;
   }
-  await game.combat.rollInitiative(ids, { formula: init_roll, updateTurn: false, messageOptions: { flavor: message_options }} );
+  await game.combat.rollInitiative(ids, { formula: init_roll, updateTurn: false, messageOptions: message_options } );
   //console.log("Done " + id);
 }
 
