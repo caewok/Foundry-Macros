@@ -129,6 +129,7 @@ const HTML_SPELL_DIE_OPTIONS =
 // Thanks https://github.com/foundry-vtt-community/macros/blob/f07330b99ec2bde5818600410528ed452272a956/5e/sneak_attack.js
 const errorNoCombatants = 'No combatants found in the combat tracker.';
 const errorNoCombatantsOwned = 'No owned combatants found in the combat tracker.';
+const errorNoActiveCombatTracker = 'No active combat tracker.';
 const confirmButton = 'Confirm';
 const cancelButton = 'Cancel';
 const titleLabel = 'Greyhawk Initiative';
@@ -1153,7 +1154,11 @@ async function doInitiative(ids, init_roll, actions = "") {
     flavor: "Greyhawk Initiative Roll.<br>" + actions
   };
   
-  await game.combat.rollInitiative(ids, init_roll, message_options);
+  if(!game.combat) {
+    ui.notifications.warn('${errorNoActiveCombatTracker}');
+    return;
+  }
+  await game.combat.rollInitiative(ids, { formula: init_roll, updateTurn: false, messageOptions: { flavor: message_options }} );
   //console.log("Done " + id);
 }
 
@@ -1980,7 +1985,12 @@ async function main(selected_combatants) {
 let errorReason = '';
 let combatants = game.combat.combatants;
 
-if(combatants.length < 1) {
+
+if(errorReason === '' & !game.combat) {
+  errorReason = `${errorNoActiveCombatTracker}`;
+}
+
+if(errorReason === '' & combatants.length < 1) {
   errorReason = `${errorNoCombatants}`;
 }
 
