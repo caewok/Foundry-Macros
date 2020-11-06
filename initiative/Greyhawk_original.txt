@@ -494,6 +494,10 @@ const combatant_selection_group_type_header =
  * @return html block
  */
 function constructCombatantSelection(combatantID, combatantName, combatantGroup = "PCs", data_type = "", data_name = "") {
+
+  data_type = data_type.split(" ").join("");
+  data_name = data_name.split(" ").join("");
+
   if("" != data_type) {
     data_type = ` data-type="${data_type}"`
   }
@@ -516,10 +520,14 @@ function constructCombatantSelection(combatantID, combatantName, combatantGroup 
  * @return html block.
  */
 function constructGroupingSelection(label, type = "Name") {
+
+  type = type.split(" ").join("");
+  const label_clean = label.split(" ").join("");
+
   const html = 
   `
-  <input type="checkbox" id="${type}${label}" class="${type}Selection"/>
-  <label for="${type}${label}">${label}</label>
+  <input type="checkbox" id="${type}${label_clean}" class="${type}Selection"/>
+  <label for="${type}${label_clean}">${label}</label>
   `;
   
   return html;
@@ -555,6 +563,10 @@ function constructSelectionScript(includePCs, includeCreatures, groupTypes, grou
   
   let includeGroupTypes = groupTypes.length > 0;
   let includeGroupNames = groupNames.length > 0;
+  
+//   console.log("Groups:");
+//   console.log(groupTypes);
+//   console.log(groupNames);
    
   if(includePCs) {
     pc_js = 
@@ -581,6 +593,8 @@ function constructSelectionScript(includePCs, includeCreatures, groupTypes, grou
     group_types_uncheck_js = `$('.TypeSelection').prop('checked', false);`;
     
     groupTypes.forEach( function(g) {
+      g = g.split(" ").join("");
+    
       group_types_js = group_types_js + 
       `
 			$('#Type${g}').change( function() {
@@ -604,6 +618,8 @@ function constructSelectionScript(includePCs, includeCreatures, groupTypes, grou
     group_names_uncheck_js = `$('.NameSelection').prop('checked', false);`;
     
 		groupNames.forEach( function(g) {
+		  g = g.split(" ").join("");
+		 
       group_names_js = group_names_js + 
       `
 			$('#Name${g}').change( function() {
@@ -1861,7 +1877,7 @@ async function main(selected_combatants) {
 		const combatant_selection_html = constructCombatantSelectionHTML(selected_combatants);
 		//let PCSelection = [];
 		//let CreatureSelection = [];
-		// console.log(combatant_selection_html);
+		console.log(combatant_selection_html);
 		
 		let res = await dialogPromise(combatant_selection_html);
 		//console.log(res);
