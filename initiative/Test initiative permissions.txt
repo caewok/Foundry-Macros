@@ -1,0 +1,43 @@
+// Test initiative permissions
+
+let combatants = game.combat.combatants;
+
+const message_options = {
+    flavor: "Test"
+};
+  
+await game.combat.rollInitiative(combatants[0]._id, "2d6", message_options);
+
+
+const init_die = `1d20`;
+
+async function roll_initiative()
+{
+  if(!game.combats.active) return;
+  let updates = duplicate(game.combats.active);
+
+  for(let combatData of updates.combatants)
+  {
+    let initiative = new Roll(`${init_die} + ${combatData.actor.data.attributes.init.value}`).roll().total;
+    combatData.initiative = initiative;
+  }
+
+  await game.combats.active.update(updates);
+}
+
+roll_initiative();
+
+
+const init_die = `2d6`;
+
+async function roll_initiative()
+{
+  // game.combat will be null if combat tracker not active
+  
+
+  if(!game.combat) return;
+  let ids = game.combat.data.combatants.map(data => data._id);
+  
+  game.combat.rollInitiative(ids, { formula : init_die, updateTurn : false, messageOptions : { flavor : `test` }});
+}
+roll_initiative();
