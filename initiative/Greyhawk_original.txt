@@ -1407,70 +1407,39 @@ function calculateDice(combatant, actionSelections, userInput) {
 	console.log(die_strings);
 	console.log("\tDescription: ");
 	console.log(action_description_array);
-	var dice = createDiceArray(die_strings);
-	console.log(dice);
+	
+	var init_roll = new Roll(die_strings.join("+"));
+	console.log(init_roll);
+	
 	
 	// Do adv/dis before init bonus. Otherwise, the init bonus could be largest die. 
-	if(advantage_type === "advantage") {
+	if(advantage_type === "advantage" | advantage_type === "disadvantage") {
 	  // find the highest die, roll with disadvantage in order to keep lowest
-	  const largest_index = largestDie(dice);
-	  dice[largest_index].disadvantage();
-	}
-
-	if(advantage_type == "disadvantage") {
-	  // find the highest die, roll with advantage in order to keep highest
-	  const largest_index = largestDie(dice);
-	  dice[largest_index].advantage();
+	  console.log("Applying " + advantage_type + " to initiative roll.");
+	  init_roll = greyhawkAdvantageDisadvantage(init_roll, advantage_type);
 	}
 
 	if(initiative_bonus != 0) {
 	  if(USE_RANDOM_BONUSES) {
 	    // lower is better, so subtract if bonus is positive
 	    // die sides equal to the absolute value of the bonus. e.g. +3 is -1d3. 
-	    console.log("Using random bonus for initiative " + bonusNumberString(initiative_bonus));
-	    const init_die = new DieRoll(1, Math.abs(initiative_bonus), "", ((initiative_bonus > 0) ? "-":"+"), "");
-	    console.log(init_die);
-	    
-	    dice.push(init_die);
+	    console.log("Using random bonus for initiative " + bonusNumberString(initiative_bonus)); 
+	    init_roll.terms.push((initiative_bonus > 0 ? "+" : "-"));
+	    init_roll.terms.push(new Die({faces: Math.abs(initiative_bonus), number: 1}));
 	  
 	  } else {
 	  
-	    if(initiative_bonus > 0) {
-	      console.log("Applying initiative bonus " + initiative_bonus + " to largest die.")
-				const largest_index = largestDie(dice);
-				//console.log("Applying +" + initBonus + " initiative bonus to die " + dice[largest_index].original_string);
-   
-				if(!isBlank(largest_index)) {
-					for(var i=0; i < initiative_bonus; i++) {
-						dice[largest_index].decreaseSides();
-					}
-				}
-				//console.log("Resulting die sides: " + dice[largest_index].sides);
-			
-	    } else if(initiative_bonus < 0) {
-	       console.log("Applying initiative penalty " + initiative_bonus + " to largest die.")
-				// find the smallest die; step side up by one increment (+2 sides) for each penalty
-				const smallest_index = smallestDie(dice);
-				//console.log("Applying -" + initPenalty + " initiative penalty to die " + dice[smallest_index].original_string);
-
-				if(!isBlank(smallest_index)) {
-					for(var i=0; i > initiative_bonus; i--) {
-						dice[smallest_index].increaseSides();
-					}
-				}
-				//console.log("Resulting die sides: " + dice[smallest_index].sides);
-	    
-	    }
-	  
+	    console.log("Applying initiative " + (initiative_bonus > 0 ? "bonus " : "penalty ") + initiative_bonus + " to " + (initiative_bonus > 0 ? "largest " : "smallest ") + " die.");
+	    init_roll = greyhawkBonus(init_roll, initiative_bonus);
 	  }
 	
 	}
 	
 	const action_description = "<ul><li>" + action_description_array.join("</li><li>") + "</ul>"; 
-	console.log(dice);
+	console.log(init_roll.formula);
 	console.log(action_description);
 
-	return { dice, action_description };
+	return { init_roll, action_description };
 }
 
 
@@ -1574,6 +1543,96 @@ function parseDieString(die_string) {
   //console.log("\tMatch returned unexpected result.");
   return die_string;
 }
+
+// --------------------------------------
+// Die Roll helper functions
+// --------------------------------------
+/**
+ * For Greyhawk style initiative.
+ * Advantage means roll disadvantage on largest die.
+ * Disadvantage means roll advantage on largest die.
+ * @r Roll class
+ * @return The modified Roll class
+ */
+function greyhawkAdvantageDisadvantage(r, type = "advantage") {
+  let dice = r.dice;
+  let max = dice.reduce(function(prev, current) {
+    if (+current.faces > +prev.faces) {
+        return current;
+    } else {
+        return prev;
+    }
+  });
+  
+  const i_adv = max.modifiers.findIndex(value => /^kh/.test(value));
+  const i_disadv = max.modifiers.findIndex(value => /^kl/.test(value));
+      
+  if(i_adv > -1) {
+    max.modifiers.splice(i_adv, 1);
+    // max.alter(.5); // alter uses parseInt, so it does not understand division.
+    // instead, subtract half the dice. Round down to try to get to even number.
+    if(max.number > 1) {
+      max.alter(1, parseInt(max.number / -2))
+    }
+  }
+  
+  if(i_disadv > -1) {
+    max.modifiers.splice(i_disadv, 1);
+     // max.alter(.5); // alter uses parseInt, so it does not understand division.
+    // instead, subtract half the dice. Round down to try to get to even number.
+    if(max.number > 1) {
+      max.alter(1, parseInt(max.number / -2))
+    }
+  }
+  
+  const adv_mod = type === "advantage" ? "kl" : "kh";  
+  max.modifiers.push(adv_mod + max.number)
+  max = max.alter(2);
+  
+  return r;
+}
+
+/**
+ * For Greyhawk-style bonuses.
+ * Apply a bonus by decreasing the sides of largest die.
+ * Apply a penalty by increasing the sides of smallest die.
+ * Sides cannot go below 1, and increase by 2 per bonus.
+ * @r Roll class
+ * @return The modified roll class
+ */
+function greyhawkBonus(r, bonus) {
+  bonus = parseInt(bonus);
+  if(bonus === 0) return(0);
+  
+  let dice = r.dice;
+  if(dice.length === 0) return(r);
+  
+  let chosen_die = dice.reduce(function(prev, current) {
+      if(bonus > 0) {
+       // find the largest die
+			if (+current.faces > +prev.faces) {
+					return current;
+			} else {
+					return prev;
+			}
+			
+		} else {
+		  // find the smallest die
+		  if (+current.faces < +prev.faces) {
+       return current;
+      } else {
+        return prev;
+      }
+		}
+    });
+  
+  
+  const new_faces = -bonus * 2;
+  chosen_die.faces = Math.max(1, chosen_die.faces + new_faces);
+  
+  return r;  
+}
+
 
 // --------------------------------------
 // OBJECT: DIE ROLL
@@ -1974,14 +2033,11 @@ async function main(selected_combatants) {
 	  console.log(c);
 	  console.log("Combatant " + c._id);
 	
-		let { dice, action_description } = calculateDice(c, actionSelections, userInput);
-		console.log(dice);
+		let { init_roll, action_description } = calculateDice(c, actionSelections, userInput);
+		console.log(init_roll.formula);
 		console.log(action_description);
-		
-	  const init_roll = constructInitiativeRollCommand(dice);
-	  console.log(init_roll); 
-     
-	  doInitiative(c._id, init_roll, action_description);
+		     
+	  doInitiative(c._id, init_roll.formula, action_description);
 	});
 	
 	
