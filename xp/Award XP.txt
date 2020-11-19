@@ -5,13 +5,52 @@
 // The dialog permits you to enter total xp or individual xps and vary the weights. 
 // On confirmation, the macro applies the xp to each character and outputs a summary to a chat message.
 
+const UPDATE_JOURNAL = true;
+const UPDATE_ACTOR_XP = true;
+
+/**
+ * Retrieve PC tokens on canvas
+ * @return Array of tokens
+ */
+function RetrievePCTokens() {
+  const tokens = canvas.tokens.placeables.filter((token) => token.data);
+  return tokens.filter(t => t.actor && t.actor.hasPlayerOwner);
+}
+
+/**
+ * Retrieve selected tokens
+ * @return Array of tokens
+ */
+function RetrieveSelectedTokens() {
+  return canvas.tokens.controlled;
+}
+
+
+/**
+ * Test for blank or empty string
+ * https://stackoverflow.com/questions/154059/how-can-i-check-for-an-empty-undefined-null-string-in-javascript
+ * @str String or object
+ * @return True if object is blank ("") or empty.
+ */  
+function isEmpty(str) {
+    const is_empty = (!str || /^\s*$/.test(str));
+    console.log("isEmpty? " + is_empty);
+    return is_empty;
+  }
+  
+  
 // getting all actors of selected tokens
-let actors = canvas.tokens.controlled.map(({ actor }) => actor);
+let tokens = RetrieveSelectedTokens();
+
 
 // if no selected tokens, use all PCs
-if (actors.length < 1) {
-  actors = game.actors.entities.filter(e => e.data.type === 'character' && e.isPC);
+if (isEmpty(tokens)) {
+  tokens = RetrievePCTokens();
 }
+
+//console.log(tokens);
+const actors = tokens.map( token => token.actor );
+//console.log(actors);
 
 //console.log("Actors: " + actors.length);
 
@@ -51,6 +90,7 @@ const dialogIntro =
 // List each actor name in a table, with current XP and inputs for added XP.
 let tableRows = ``;
 actors.forEach(actor => {
+ console.log(actor);
  //console.log("\t" + actor.name + " " + actor.data.data.details.xp.value + " XP");
  
  const actorXP = parseInt(actor.data.data.details.xp.value);
@@ -59,12 +99,12 @@ actors.forEach(actor => {
  const tableRow = 
  ` 
    <tr class="character-row">
-                <td id="character" name="character" class="character">${actor.name}</td>
-                <td id="currentXP" name="currentXP" class="currentXP">${actorXP}</td>
-                <td> <input type="number" name="weight" id="weight" class="weight" value=1.0 /></td>
-                <td> <input type="number" name="encounterXP" id="encounterXP" class="encounterXP" value=100 /></td>
+                <td name="character" class="character">${actor.name}</td>
+                <td name="currentXP" class="currentXP">${actorXP}</td>
+                <td> <input type="number" name="weight" class="weight" value=1.0 /></td>
+                <td> <input type="number" name="encounterXP" class="encounterXP" value=100 /></td>
                 
-                <td id="totalXP" name="totalXP" class="totalXP">${actorTotalXP}</td>
+                <td name="totalXP" class="totalXP">${actorTotalXP}</td>
               </tr>
  `;
   tableRows += tableRow;
@@ -267,18 +307,35 @@ function award_xp(totalAmount, amountArray) {
   //console.log("Amount (0): " + amountArray[0].value);
   
   let chatContent = `
+      <em>${canvas.scene.name}</em><br>
 			<b>${totalAmount} Experience Awarded!</b>
 			`;
   
   actors.forEach(actor => {
     var index = actors.indexOf(actor);
     var awardAmount = parseInt( amountArray[index].value );
-    //console.log("Awarding " + awardAmount + " to " + actor.name);
+    console.log("Awarding " + awardAmount + " to " + actor.name);
     chatContent += `<br>${awardAmount} added to ${actor.name}.`;
     
+    if(UPDATE_ACTOR_XP) {
     actor.update({
        "data.details.xp.value": actor.data.data.details.xp.value + awardAmount
         });
+    }
+        
+    if(UPDATE_JOURNAL) {
+    const current_notes = actor.data.data.details.hasOwnProperty("notes") ? actor.data.data.details.notes.value : "";
+    
+    const updated_notes = current_notes + `
+      <p><em>${canvas.scene.name}</em> ${awardAmount} XP earned.</p>
+    `
+    actor.update({
+      "data.details.notes": {value: updated_notes}
+    
+    });
+    
+    }
+        
   })
   
   let chatData = {
@@ -301,7 +358,9 @@ new Dialog({
         callback: (html) =>
         {
           let totalAmount = html.find('[id=totalEncounterXP]')[0].value;
-          let amountArray = (html.find('[id=encounterXP]'));
+          let amountArray = (html.find('[name=encounterXP]'));
+          //console.log("totalAmount: " + totalAmount);
+          //console.log(amountArray);
           award_xp(totalAmount, amountArray);
         }
       },
