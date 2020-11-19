@@ -1,0 +1,242 @@
+let die = new Die({faces: 6, number: 4}).evaluate();
+die.drop("dl2")
+console.log(die);
+console.log(die.formula);
+
+let die1 = new Die({faces: 1, number: 2}).evaluate();
+console.log(die1);
+console.log(die1.formula);
+
+let die2 = new Die({faces: 20, number: 2});
+die2.keep("2");
+die2 = die2.evaluate();
+console.log(die2);
+console.log(die2.formula);
+
+let die = new Die({faces: 6, number: 4, modifiers: ["kh3"]});
+//die = die.drop("dl2");
+//console.log(die);
+die = die.alter(2);
+console.log(die.formula);
+console.log(die.evaluate());
+
+
+let die = new Die({faces: 1, number: 4, modifiers: ["kh3", "r<3"]});
+let die = new Die({faces: 1, number: 4, modifiers: ["+2"]});
+//die = die.drop("dl2");
+//console.log(die);
+die = die.alter(2);
+console.log(die.formula);
+console.log(die.evaluate());
+
+let roll = new Roll("");
+let pool = new DicePool({rolls:[new Roll("1d8x[Die 1]"), new Roll("1d8x[Die 2]"), new Roll("1d8x[Die 3]")], modifiers:["kh2"]})
+roll.terms.push(pool)
+roll.roll().toMessage();
+
+
+let die = Die.fromExpression("4d6");
+console.log(die);
+
+let die = Die.fromExpression("4d6 + 2");
+console.log(die); // does not pick up the +2
+
+let die = Die.fromExpression("4d6kh3");
+console.log(die); // picks up the kh3 as modifier
+
+let pool = DicePool.fromExpression("{4d6dl,3d8,2d10}kh");
+console.log(pool);
+
+let combatants = game.combat.combatants;
+let combatant = combatants[0];
+console.log(combatant);
+let formula = "4d6 + 20 + @attributes.prof";
+const rollData = combatant.actor ? combatant.actor.getRollData() : {};
+let the_roll = Roll.create(formula, rollData).roll();
+console.log(the_roll);
+
+
+// Test advantage / disadvantage, finding highest
+let r = new Roll("1d12 + 2d6 + 3d4 + @prof + 5", {prof: 2});
+
+/*
+let dice = r.terms.filter(d => d instanceof DiceTerm);
+console.log(dice);
+
+dice[0].alter(2);
+console.log(dice);
+console.log(r);
+*/
+
+// console.log(r);
+let dice = r.dice;
+//console.log(dice);
+let max = dice.reduce(function(prev, current) {
+    if (+current.faces > +prev.faces) {
+        return current;
+    } else {
+        return prev;
+    }
+});
+console.log(max);
+let current_number = max.number;
+max = max.alter(2);
+
+let i = max.modifiers.findIndex(value => /^kl/.test(value)); // returns -1 for not found
+console.log(i)
+
+
+
+max.modifiers = ["kl" + current_number];
+console.log(max.formula);
+
+i = max.modifiers.findIndex(value => /^kl/.test(value));
+console.log(i)
+
+
+let min = dice.reduce(function(prev, current) {
+    if (+current.faces < +prev.faces) {
+        return current;
+    } else {
+        return prev;
+    }
+});
+console.log(min);
+current_number = min.number;
+min = min.alter(2);
+min.modifiers = ["kh" + current_number];
+console.log(min.formula);
+
+console.log(dice);
+console.log(r);
+console.log(r.formula);
+
+
+
+
+/**
+ * For Greyhawk-style initiative.
+ * Advantage means roll disadvantage on largest die.
+ * Disadvantage means roll advantage on largest die.
+ * @r Roll class
+ * @return The modified Roll class
+ */
+function greyhawkAdvantageDisadvantage(r, type = "advantage") {
+  let dice = r.dice;
+  let max = dice.reduce(function(prev, current) {
+    if (+current.faces > +prev.faces) {
+        return current;
+    } else {
+        return prev;
+    }
+  });
+  
+  const i_adv = max.modifiers.findIndex(value => /^kh/.test(value));
+  const i_disadv = max.modifiers.findIndex(value => /^kl/.test(value));
+      
+  if(i_adv > -1) {
+    max.modifiers.splice(i_adv, 1);
+    // max.alter(.5); // alter uses parseInt, so it does not understand division.
+    // instead, subtract half the dice. Round down to try to get to even number.
+    if(max.number > 1) {
+      max.alter(1, parseInt(max.number / -2))
+    }
+  }
+  
+  if(i_disadv > -1) {
+    max.modifiers.splice(i_disadv, 1);
+     // max.alter(.5); // alter uses parseInt, so it does not understand division.
+    // instead, subtract half the dice. Round down to try to get to even number.
+    if(max.number > 1) {
+      max.alter(1, parseInt(max.number / -2))
+    }
+  }
+  
+  const adv_mod = type === "advantage" ? "kl" : "kh";  
+  max.modifiers.push(adv_mod + max.number)
+  max = max.alter(2);
+  
+  return r;
+}
+
+/**
+ * For Greyhawk-style bonuses.
+ * Apply a bonus by decreasing the sides of largest die.
+ * Apply a penalty by increasing the sides of smallest die.
+ * Sides cannot go below 1, and increase by 2 per bonus.
+ * @r Roll class
+ * @return The modified roll class
+ */
+function greyhawkBonus(r, bonus) {
+  bonus = parseInt(bonus);
+  if(bonus === 0) return(0);
+  
+  let dice = r.dice;
+  if(dice.length === 0) return(r);
+  
+  let chosen_die = dice.reduce(function(prev, current) {
+      if(bonus > 0) {
+       // find the largest die
+			if (+current.faces > +prev.faces) {
+					return current;
+			} else {
+					return prev;
+			}
+			
+		} else {
+		  // find the smallest die
+		  if (+current.faces < +prev.faces) {
+       return current;
+      } else {
+        return prev;
+      }
+		}
+    });
+  
+  
+  const new_faces = -bonus * 2;
+  chosen_die.faces = Math.max(1, chosen_die.faces + new_faces);
+  
+  return r;  
+}
+ 
+
+
+let r = new Roll("2d6 + 2d12 + 3d4 + @prof + 5", {prof: 2});
+//console.log(r);
+console.log(r.formula);
+r = greyhawkAdvantageDisadvantage(r);
+//console.log(r);
+console.log(r.formula);
+r = greyhawkAdvantageDisadvantage(r, "disadvantage");
+//console.log(r);
+console.log(r.formula);
+
+let arr = ["kl1"];
+console.log(arr.splice(0, 1));
+
+
+let r = new Roll("2d6 + 2d12 + 3d4 + @prof + 5", {prof: 2});
+console.log(r);
+
+let initiative_bonus = 2;
+r.terms.push((initiative_bonus > 0 ? "+" : "-"));
+r.terms.push(new Die({faces: Math.abs(initiative_bonus), number: 1}));
+console.log(r);
+console.log(r.formula);
+
+let r = new Roll("2d6 + 2d12 + 3d4 + @prof + 5", {prof: 2});
+console.log(r.formula);
+r = greyhawkBonus(r, 2);
+console.log(r.formula);
+
+r = greyhawkBonus(r, -2);
+console.log(r.formula);
+
+
+let r = new Roll("@prof + 5", {prof: 2});
+console.log(r.formula);
+r = greyhawkBonus(r, 2);
+console.log(r.formula);
+
+    
