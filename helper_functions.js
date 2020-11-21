@@ -56,3 +56,44 @@ function isEmpty(str) {
     //console.log("isEmpty? " + is_empty);
     return is_empty;
   }
+  
+  
+/**
+ * Convert dialog to a promise to allow use with await/async.
+ * @content HTML content for the dialog.
+ * @return Promise for the html content of the dialog
+ * Will return "Cancel" or "Close" if those are selected.
+ */
+function dialogPromise(content) {
+  return new Promise((resolve, reject) => {
+    dialogCallback(content, (html) => resolve(html)); 
+  });
+}
+
+/**
+ * Create new dialog with a callback function that can be used for dialogPromise.
+ * @content HTML content for the dialog.
+ * @callbackFn Allows conversion of the callback to a promise using dialogPromise.
+ * @return rendered dialog.
+ */
+function dialogCallback(content, callbackFn) {
+	let d = new Dialog({
+		title: titleLabel,
+		content: content,
+		buttons: {
+			one: {
+				icon: '<i class="fas fa-check"></i>',
+				label: confirmButton,
+				callback: (html) => callbackFn(html)
+			},
+			two: {
+				icon: '<i class="fas fa-times"></i>',
+				label: cancelButton,
+				callback: () => callbackFn("Cancel")
+			}
+			},
+		default: "two",
+		close: () => callbackFn("Close")
+	});
+	d.render(true);
+}

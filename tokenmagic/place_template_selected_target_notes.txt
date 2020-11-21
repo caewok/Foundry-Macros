@@ -1,0 +1,99 @@
+// Macro to create a template between selected and target
+// Used for animated template, like throwing a chromatic orb, from selected to target
+
+// let target = canvas.tokens.get(args[1])
+
+// yup, you'll have to rework the macro a little bit but yes
+// so in DAE there is an effect key called Maco.execute you can use to call macros on/off
+// if you type the name of your macro in the effect value box it will run that macro
+// if you can post your light macro I can show you how you need to change it for use in DAE
+// cmrosen11/11/2020
+// wow cool, thanks I will post it now. It is as simple as possible
+// i wasnt sure how to consolidate the on and off functionality into one macro so I made two, one for light cantrip on and one for light cantrip off. The on is as follows
+// token.update({
+//  dimLight: 40,
+//  brightLight:  20,
+// });
+// Kandashi (He/Him)11/11/2020
+// ok cool
+// cmrosen11/11/2020
+// the off just sets those values to zero again
+// Kandashi (He/Him)11/11/2020
+// so there are 2 changes we need to make to this, one so it knows about the on/off call, and the second to tell it which token to apply to
+// Stormen11/11/2020
+// @Kandashi (He/Him) Thanks that got me really really close I can fine tune it from here
+// Kandashi (He/Him)11/11/2020
+// :TracerSalute:
+// @cmrosen so with DAE macros you put 
+// if(args[0] ==="on) {
+// ///stuff here
+// }
+// this will run the "stuff" when the macro is turned on
+// for the reverse you just use "off" instead of on
+// cmrosen11/11/2020
+// sweet I will try this out. Thanks!
+// Kandashi (He/Him)11/11/2020
+// there is 1 more change, just so the macro knows which token to affect
+// cmrosen11/11/2020
+// o ya right
+// Kandashi (He/Him)11/11/2020
+// we need to put 
+// let target = canvas.tokens.get(args[1])
+//  in the macro, and in the DAE macro execute add @target to the end
+// then change token.update to target.update
+// cmrosen11/11/2020
+// got it
+// Kandashi (He/Him)11/11/2020
+// you can use this with any DAE macro to only effect the person you target with the ability
+// Oh, one more note (i should have said this earlier) you will need Midi QoL for this to work :/
+
+// Kandashi (He/Him)11/11/2020
+// Macro is 
+// if(args[0] === "on") {
+//     (async() => {
+//     let target = canvas.tokens.get(args[1]);
+//     let { total } = await target.rollAbilitySave(args[2])
+//     if(total < args[3]){
+//         game.cub.addCondition(args[4], target)
+//     }
+//     })();
+// }
+// if(args[0] === "off") {
+//     game.cub.removeCondition(args[4], target)
+// }
+// 
+// called with "macro-name" @target "con" 15 "Frightened"
+// i keep getting different errors :/
+// tposney11/11/2020
+// I think the "target" not defined is the "off" case, since target is not defined in that block.
+// Kandashi (He/Him)11/11/2020
+// ahh oops :stuck_out_tongue:
+// tposney11/11/2020
+// And when you reapply the same macro effect it first calls the old one with "off", then the new one with "on".
+// Kandashi (He/Him)11/11/2020
+// ahhh
+// np, i just messed something up with the macro then :/
+// well I now have a base system to apply rider effects with :party_wizard:
+// tposney11/11/2020
+// Neat. Heads up on the next release of midi - will support advantage/disadvantage on attacks/saves/checks/skills which can be toggled with active effects (cub conditions even).
+
+// MeasuredTemplate.create({
+//   t: "circle",
+//   user: game.user._id,
+//   x: 
+//   direction: 0,
+//   distance: 30,
+//   borderColor: "#FF0000",
+//   fillColor: "#FF3366",
+// });
+
+let actors = canvas.tokens.controlled.map(({ actor }) => actor);
+
+// works better with tokens or tiles with no shadows
+const shocking_graspFx = TokenMagic.getPreset("Shocking Grasp");
+
+TokenMagic.addFiltersOnTargeted(shocking_graspFx);
+//TokenMagic.addFiltersOnSelected(params);
+
+
+token = 
