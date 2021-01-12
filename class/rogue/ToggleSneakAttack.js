@@ -7,6 +7,18 @@ const icon = "icons/svg/mystery-man-black.svg"
 const FORCE_DISABLE = false;
 const USE_MACRO_MARKER = true;
 
+/**
+ * Test for blank or empty string
+ * https://stackoverflow.com/questions/154059/how-can-i-check-for-an-empty-undefined-null-string-in-javascript
+ * @str String or object
+ * @return True if object is blank ("") or empty.
+ */  
+function isEmpty(str) {
+    const is_empty = (!str || /^\s*$/.test(str));
+    //console.log("isEmpty? " + is_empty);
+    return is_empty;
+  }
+
 
 let tokens = canvas.tokens.controlled;
 //console.log(tokens[0]);
@@ -14,6 +26,8 @@ let tokens = canvas.tokens.controlled;
 let self = this;
 tokens.forEach( function(token) {
   let effect = token.actor.effects.entries.find(ef=> ef.data.label===effect_name);
+  if(isEmpty(effect)) return;
+  
   let effect_id = effect.data._id;
   // if the effect is currently disabled, we want to turn it on
   let turn_on = effect.data.disabled;
@@ -42,7 +56,7 @@ tokens.forEach( function(token) {
 // Does not seem to work??
 /*
 const effect_name = "Sneak Attack";
-const effect = actor.effects.entries.find(ef=> ef.data.label===effect_name);
+const effect = token.actor.effects.entries.find(ef=> ef.data.label===effect_name);
 return !effect.data.disabled;
 */
 
