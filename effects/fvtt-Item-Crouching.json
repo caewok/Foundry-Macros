@@ -1,0 +1,142 @@
+{
+  "name": "Crouching",
+  "type": "feat",
+  "data": {
+    "description": {
+      "value": "<p>Parts of Dragon Mountain are very close quarters with low ceilings. Medium or larger creatures have disadvantage on most melee and range attacks.</p>",
+      "chat": "",
+      "unidentified": ""
+    },
+    "source": "Dragon Mountain",
+    "activation": {
+      "type": "",
+      "cost": 0,
+      "condition": ""
+    },
+    "duration": {
+      "value": null,
+      "units": ""
+    },
+    "target": {
+      "value": null,
+      "width": null,
+      "units": "",
+      "type": ""
+    },
+    "range": {
+      "value": null,
+      "long": null,
+      "units": ""
+    },
+    "uses": {
+      "value": 0,
+      "max": 0,
+      "per": null
+    },
+    "consume": {
+      "type": "",
+      "target": null,
+      "amount": null
+    },
+    "ability": null,
+    "actionType": "",
+    "attackBonus": 0,
+    "chatFlavor": "",
+    "critical": null,
+    "damage": {
+      "parts": [],
+      "versatile": ""
+    },
+    "formula": "",
+    "save": {
+      "ability": "",
+      "dc": null,
+      "scaling": "spell"
+    },
+    "requirements": "",
+    "recharge": {
+      "value": null,
+      "charged": false
+    }
+  },
+  "sort": 100000,
+  "flags": {
+    "exportSource": {
+      "world": "krynn",
+      "system": "dnd5e",
+      "coreVersion": "0.7.7",
+      "systemVersion": "1.1.1"
+    },
+    "core": {
+      "sourceId": "Item.CE4ATaXUKYQn21oT"
+    }
+  },
+  "effects": [
+    {
+      "_id": "yEUcAF6MHtCObAWI",
+      "flags": {
+        "dae": {
+          "stackable": false,
+          "transfer": true
+        }
+      },
+      "changes": [
+        {
+          "key": "flags.midi-qol.disadvantage.attack.all",
+          "mode": 5,
+          "value": "1",
+          "priority": 20
+        }
+      ],
+      "disabled": false,
+      "duration": {
+        "startTime": null,
+        "seconds": null,
+        "rounds": null,
+        "turns": null,
+        "startRound": null,
+        "startTurn": null
+      },
+      "icon": "icons/svg/downgrade.svg",
+      "label": "Disadvantage attack",
+      "origin": "Item.rNEh6u5HTEd9UaI6",
+      "tint": "",
+      "transfer": true,
+      "selectedKey": "data.abilities.cha.dc"
+    },
+    {
+      "_id": "yBZWsJg05H7OtAjG",
+      "flags": {
+        "dae": {
+          "stackable": false,
+          "transfer": true
+        }
+      },
+      "changes": [
+        {
+          "key": "data.attributes.movement.walk",
+          "mode": 1,
+          "value": 0.5,
+          "priority": 20
+        }
+      ],
+      "disabled": false,
+      "duration": {
+        "startTime": null,
+        "seconds": null,
+        "rounds": null,
+        "turns": null,
+        "startRound": null,
+        "startTurn": null
+      },
+      "icon": "icons/svg/downgrade.svg",
+      "label": "Halve movement speed",
+      "origin": "Item.rNEh6u5HTEd9UaI6",
+      "tint": "",
+      "transfer": true,
+      "selectedKey": "data.attributes.movement.walk"
+    }
+  ],
+  "_id": "CE4ATaXUKYQn21oT",
+  "img": "icons/svg/downgrade.svg"
+}
