@@ -1,0 +1,39 @@
+{
+  "_id": "ZYNCy8pep9o7GH98",
+  "name": "JB2A ThrowingDagger",
+  "type": "script",
+  "sort": 1000001,
+  "flags": {
+    "core": {
+      "sourceId": "Macro.AFtnE8v55aIK2h6h"
+    },
+    "macro-marker": {
+      "activeData": {
+        "icon": "modules/jb2a_patreon/Library/6th_Level/Disintegrate/Disintegrate_01_Regular_Green01_Thumb.webp",
+        "tooltip": "Blueprint CasterToTarget 15ft 30ft 45ft (Copy)",
+        "colour": "#ff0000",
+        "trigger": ""
+      }
+    },
+    "combat-utility-belt": {
+      "macroTrigger": ""
+    },
+    "exportSource": {
+      "world": "krynn",
+      "system": "dnd5e",
+      "coreVersion": "0.7.7",
+      "systemVersion": "1.1.1"
+    }
+  },
+  "scope": "global",
+  "command": "//This macro plays the animation on selected targets with a trajectory and distances of 15ft, 30ft and 45ft\n//It works for Throwing Dagger, Ray of Frost, Disintegrate\n//Import this macro, duplicate it and change its name making sure it's unique by adding the colour (i.e. \"Ray Of Frost Blue\").\n//If it has the exact same name as the spell or item you want to trigger it from, you'll encounter an issue.\n//folder 01 is the directory path to the assets\n// let folder01 = \"modules/jb2a_patreon/Library/Cantrip/Ray_Of_Frost/\";\n//anFile 15 for the 15ft file, anFile30 for 30ft and anFile 45 for 45ft\n// let anFile15 = `${folder01}RayOfFrost_01_Blue_15ft_1000x400.webm`;\n// let anFile30 = `${folder01}RayOfFrost_01_Blue_30ft_1600x400.webm`;\n// let anFile45 = `${folder01}RayOfFrost_01_Blue_45ft_2200x400.webm`;\n\n//How you would set it up for the Thrown Dagger01\n// let folder01 = \"modules/jb2a_patreon/Library/Generic/Weapon_Attacks/Ranged/\";\n// let anFile15 = `${folder01}ThrowingWeapon_Dagger01_15ft_1000x400.webm`;\n// let anFile30 = `${folder01}ThrowingWeapon_Dagger01_30ft_1600x400.webm`;\n// let anFile45 = `${folder01}ThrowingWeapon_Dagger01_45ft_2200x400.webm`;\n\n//How this macro is set up for Disintegrate\nlet folder01 = \"modules/jb2a_patreon/Library/Generic/Weapon_Attacks/Ranged/\";\nlet anFile15 = `${folder01}ThrowingWeapon_Dagger01_15ft_1000x400.webm`;\nlet anFile30 = `${folder01}ThrowingWeapon_Dagger01_30ft_1600x400.webm`;\nlet anFile45 = `${folder01}ThrowingWeapon_Dagger01_45ft_2200x400.webm`;\n\n\nif(game.user.targets.size == 0) ui.notifications.error('You must target at least one token');\nif(canvas.tokens.controlled.length == 0) ui.notifications.error(\"Please select your token\");\n///Check if Module dependencies are installed or returns an error to the user\nif (!canvas.fxmaster) ui.notifications.error(\"This macro depends on the FXMaster module. Make sure it is installed and enabled\");\nconst wait = (delay) => new Promise((resolve) => setTimeout(resolve, delay))\n\n\nasync function Cast() {\nvar myStringArray = Array.from(game.user.targets)[0];\nvar arrayLength = game.user.targets.size;\nfor (var i = 0; i < arrayLength; i++) {\n\nlet mainTarget = Array.from(game.user.targets)[i];\nlet myToken = canvas.tokens.controlled [0];\n\nlet ray = new Ray(myToken.center, mainTarget.center);\nlet anDeg = -(ray.angle * 57.3);\nlet anDist = ray.distance;\n\nlet anFile = anFile15;\nlet anFileSize = 600;\nlet anchorX = 0.2;\nswitch(true){\n case (anDist<=600):\n    anFileSize = 600;\n    anFile = anFile15;\n    anchorX = 0.2;\n    break;\n case (anDist>1200):\n    anFileSize = 1800;\n    anFile = anFile45;\n    anchorX = 0.091;\n    break;\n default:\n    anFileSize = 1200;\n    anFile = anFile30;\n    anchorX = 0.125;\n    break;\n}\n\nlet anScale = anDist / anFileSize;\nlet anScaleY = anScale;\nif (anDist<=300){anScaleY = 0.7}\nif (anDist>=400 && anDist<=600){anScaleY = anScale*0.9}\nif (anDist>=700 && anDist<=900){anScaleY = 0.8}\nif (anDist>=1000 && anDist<=1200){anScaleY = anScale*0.9}\nif (anDist>=1300 && anDist<=1500){anScaleY = 0.6}\nif (anDist>=1600 && anDist<=1800){anScaleY = 0.8}\nif (anDist>=1800){anScaleY = anScale}\n\nlet spellAnim = \n                    {\n                     file: anFile,\n                      position: myToken.center,\n                      anchor: {\n                       x: anchorX,\n                       y: 0.5\n                      },\n                      angle: anDeg,\n                      scale: {\n                       x: anScale,\n                       y: anScaleY\n                      }\n                    }; \n\ncanvas.fxmaster.playVideo(spellAnim);\ngame.socket.emit('module.fxmaster', spellAnim);\nawait wait (500);\n}\n}\nCast ()",
+  "author": "YizVbEtN3R0MhWGN",
+  "img": "modules/jb2a_patreon/Library/Generic/Weapon_Attacks/Ranged/ThrowingWeapon_Dagger01_Thumb.webp",
+  "actorIds": [],
+  "macro-marker": {
+    "icon": "modules/jb2a_patreon/Library/6th_Level/Disintegrate/Disintegrate_01_Regular_Green01_Thumb.webp",
+    "tooltip": "Blueprint CasterToTarget 15ft 30ft 45ft (Copy)",
+    "colour": "#ff0000",
+    "trigger": ""
+  }
+}

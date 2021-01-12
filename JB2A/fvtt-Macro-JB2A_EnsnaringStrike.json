@@ -1,0 +1,33 @@
+{
+  "_id": "UauTJEYlWbT5FuS5",
+  "name": "JB2A EnsnaringStrike",
+  "type": "script",
+  "sort": 1300001,
+  "flags": {
+    "core": {
+      "sourceId": "Macro.B14ZptISDhdxLYtd"
+    },
+    "macro-marker": {
+      "activeData": {
+        "icon": "modules/jb2a_patreon/Library/1st_Level/Cure_Wounds/CureWounds_01_Blue_Thumb.webp",
+        "tooltip": "Blueprint Animation OnTargetFX (Copy)",
+        "colour": "#ff0000",
+        "trigger": ""
+      }
+    },
+    "combat-utility-belt": {
+      "macroTrigger": ""
+    },
+    "exportSource": {
+      "world": "krynn",
+      "system": "dnd5e",
+      "coreVersion": "0.7.7",
+      "systemVersion": "1.1.1"
+    }
+  },
+  "scope": "global",
+  "command": "//This macro plays the animation on selected targets with no trajectory\n//It works for animations like Cure Wounds, Healing Ability and Dizzy Stars \n//Import this macro, duplicate it and change its name making sure it's unique by adding the colour (i.e. \"Cure Wounds Blue\").\n//If it has the exact same name as the spell or item you want to trigger it from, you'll encounter an issue.\n//folder 01 is the directory path to the assets\nlet folder01 = \"modules/jb2a_patreon/Library/1st_Level/Entangle/Opacities/\";\n//anFile is the name of the file used for the animation\nlet anFile = `${folder01}Entangle_01_Brown_75OPA_400x400.webm`;\n\n//another example would be:\n//let folder01 = \"modules/jb2a_patreon/Library/Generic/Healing/\"\n//let anFile = `${folder01}HealingAbility_01_Green_200x200.webm`;\n\n\nif(game.user.targets.size == 0) ui.notifications.error('You must target at least one token');\n///Check if Module dependencies are installed or returns an error to the user\nif (!canvas.fxmaster) ui.notifications.error(\"This macro depends on the FXMaster module. Make sure it is installed and enabled\");\n\n\nconst wait = (delay) => new Promise((resolve) => setTimeout(resolve, delay))\n\nasync function Cast() {\nvar myStringArray = Array.from(game.user.targets)[0];\nvar arrayLength = game.user.targets.size;\nfor (var i = 0; i < arrayLength; i++) {\n\nlet mainTarget = Array.from(game.user.targets)[i];\nlet tarScale = ((mainTarget.data.width + mainTarget.data.height)/2);\n\n\nlet spellAnim = \n                    {\n                     file: anFile,\n                      position: mainTarget.center,\n                      anchor: {\n                       x: 0.5,\n                       y: 0.5\n                      },\n                      angle: 0,\n                      scale: {\n                       x: tarScale,\n                       y: tarScale\n                      }\n                    }; \ncanvas.fxmaster.playVideo(spellAnim);\ngame.socket.emit('module.fxmaster', spellAnim);\nawait wait (75);\n}\n}\nCast ()",
+  "author": "YizVbEtN3R0MhWGN",
+  "img": "modules/jb2a_patreon/Library/1st_Level/Entangle/Entangle_01_Brown_Thumb.webp",
+  "actorIds": []
+}

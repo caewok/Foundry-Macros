@@ -1,0 +1,33 @@
+{
+  "_id": "mlgri7XmwmoFJTmt",
+  "name": "JB2A FireBolt Orange",
+  "type": "script",
+  "sort": 900001,
+  "flags": {
+    "core": {
+      "sourceId": "Macro.68CDpJv8wdDdnGI6"
+    },
+    "macro-marker": {
+      "activeData": {
+        "icon": "modules/jb2a_patreon/Library/Cantrip/Fire_Bolt/FireBolt_01_Regular_Orange_Thumb.webp",
+        "tooltip": "Blueprint CasterToTarget 30ft 60ft 90ft (Copy)",
+        "colour": "#ff0000",
+        "trigger": ""
+      }
+    },
+    "combat-utility-belt": {
+      "macroTrigger": ""
+    },
+    "exportSource": {
+      "world": "krynn",
+      "system": "dnd5e",
+      "coreVersion": "0.7.7",
+      "systemVersion": "1.1.1"
+    }
+  },
+  "scope": "global",
+  "command": "//This macro plays the animation on selected targets with a trajectory and distances of 30ft, 60ft and 90ft\n//It works for animations like Scorching Ray, Fire Bolt, Arrow, Boulder Toss, Siege Projectile that use these distances\n//Import this macro, duplicate it and change its name making sure it's unique by adding the colour (i.e. \"Ray Of Frost Blue\").\n//If it has the exact same name as the spell or item you want to trigger it from, you'll encounter an issue.\n\n//folder 01 is the directory path to the assets\n// let folder01 = \"modules/jb2a_patreon/Library/2nd_Level/Scorching_Ray/\";\n//anFile30 points to the file corresponding to 30ft, anFile60 for 60ft and anFile90 for 90ft\n// let anFile30 = `${folder01}ScorchingRay_01_Orange_30ft_1600x400.webm`;\n// let anFile60 = `${folder01}ScorchingRay_01_Orange_60ft_2800x400.webm`;\n// let anFile90 = `${folder01}ScorchingRay_01_Orange_90ft_4000x400.webm`;\n\n//How this macro is set up for Fire Bolt\nlet folder01 = \"modules/jb2a_patreon/Library/Cantrip/Fire_Bolt/\";\nlet anFile30 = `${folder01}FireBolt_01_Regular_Orange_30ft_1600x400.webm`;\nlet anFile60 = `${folder01}FireBolt_01_Regular_Orange_60ft_2800x400.webm`;\nlet anFile90 = `${folder01}FireBolt_01_Regular_Orange_90ft_4000x400.webm`;\n\n\nif(game.user.targets.size == 0) ui.notifications.error('You must target at least one token');\nif(canvas.tokens.controlled.length == 0) ui.notifications.error(\"Please select your token\");\n///Check if Module dependencies are installed or returns an error to the user\nif (!canvas.fxmaster) ui.notifications.error(\"This macro depends on the FXMaster module. Make sure it is installed and enabled\");\n\nconst wait = (delay) => new Promise((resolve) => setTimeout(resolve, delay))\n\nasync function Cast() {\nvar myStringArray = Array.from(game.user.targets)[0];\nvar arrayLength = game.user.targets.size;\nfor (var i = 0; i < arrayLength; i++) {\n\nlet mainTarget = Array.from(game.user.targets)[i];\nlet myToken = canvas.tokens.controlled [0];\n\nlet ray = new Ray(myToken.center, mainTarget.center);\nlet anDeg = -(ray.angle * 57.3);\nlet anDist = ray.distance;\n\n\nlet anFile = anFile30;\nlet anFileSize = 1200;\nlet anchorX = 0.125;\nswitch(true){\n case (anDist<=1200):\n    anFileSize = 1200;\n    anFile = anFile30;\n    anchorX = 0.125;\n    break;\n case (anDist>2400):\n    anFileSize = 3600;\n    anFile = anFile90;\n    anchorX = 0.05;\n    break;\n default:\n    anFileSize = 2400;\n    anFile = anFile60;\n    anchorX = 0.071;\n    break;\n}\n\nlet anScale = anDist / anFileSize;\nlet anScaleY = anDist <= 600 ? 0.6  : anScale;\n\nlet spellAnim = \n                    {\n                     file: anFile,\n                      position: myToken.center,\n                      anchor: {\n                       x: anchorX,\n                       y: 0.5\n                      },\n                      angle: anDeg,\n                      scale: {\n                       x: anScale,\n                       y: anScaleY\n                      }\n                    }; \n\ncanvas.fxmaster.playVideo(spellAnim);\ngame.socket.emit('module.fxmaster', spellAnim);\nawait wait (250);\n}\n}\nCast ()",
+  "author": "YizVbEtN3R0MhWGN",
+  "img": "modules/jb2a_patreon/Library/Cantrip/Fire_Bolt/FireBolt_01_Regular_Orange_Thumb.webp",
+  "actorIds": []
+}
