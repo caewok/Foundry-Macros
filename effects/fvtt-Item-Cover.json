@@ -1,0 +1,149 @@
+{
+  "_id": "5p1tMs7PXiV56ZcD",
+  "name": "Cover",
+  "type": "feat",
+  "data": {
+    "description": {
+      "value": "<p>Walls, trees, creatures, and other obstacles can provide cover during combat, making a target more difficult to harm. A target can benefit from cover only when an attack or other effect originates on the opposite side of the cover.</p>\n<p>There are three degrees of cover. If a target is behind multiple sources of cover, only the most protective degree of cover applies; the degrees aren't added together. For example, if a target is behind a creature that gives half cover and a tree trunk that gives three- quarters cover, the target has three-quarters cover.</p>\n<p>A target with half cover has a +2 bonus to AC and Dexterity saving throws. A target has half cover if an obstacle blocks at least half of its body. The obstacle might be a low wall, a large piece of furniture, a narrow tree trunk, or a creature, whether that creature is an enemy or a friend.</p>\n<p>A target with three-quarters cover has a +5 bonus to AC and Dexterity saving throws. A target has three-quarters cover if about three-quarters of it is covered by an obstacle. The obstacle might be a portcullis, an arrow slit, or a thick tree trunk.</p>\n<p>A target with total cover can&rsquo;t be targeted directly by an attack or a spell, although some spells can reach such a target by including it in an area of effect. A target has total cover if it is completely concealed by an obstacle.</p>",
+      "chat": "",
+      "unidentified": ""
+    },
+    "source": "PHB p. 196",
+    "activation": {
+      "type": "",
+      "cost": 0,
+      "condition": ""
+    },
+    "duration": {
+      "value": null,
+      "units": ""
+    },
+    "target": {
+      "value": null,
+      "width": null,
+      "units": "",
+      "type": ""
+    },
+    "range": {
+      "value": null,
+      "long": null,
+      "units": ""
+    },
+    "uses": {
+      "value": 0,
+      "max": 0,
+      "per": null
+    },
+    "consume": {
+      "type": "",
+      "target": null,
+      "amount": null
+    },
+    "ability": null,
+    "actionType": "",
+    "attackBonus": 0,
+    "chatFlavor": "",
+    "critical": null,
+    "damage": {
+      "parts": [],
+      "versatile": ""
+    },
+    "formula": "",
+    "save": {
+      "ability": "",
+      "dc": null,
+      "scaling": "spell"
+    },
+    "requirements": "",
+    "recharge": {
+      "value": null,
+      "charged": false
+    }
+  },
+  "sort": 200000,
+  "flags": {
+    "exportSource": {
+      "world": "dragon-mountain",
+      "system": "dnd5e",
+      "coreVersion": "0.7.7",
+      "systemVersion": "1.1.1"
+    }
+  },
+  "img": "icons/environment/wilderness/wall-ruins.webp",
+  "effects": [
+    {
+      "_id": "3UNL2PZIsYExEg6K",
+      "flags": {
+        "dae": {
+          "stackable": false,
+          "transfer": true
+        }
+      },
+      "changes": [
+        {
+          "key": "data.attributes.ac.value",
+          "value": 2,
+          "mode": 2,
+          "priority": 20
+        },
+        {
+          "key": "data.abilities.dex.save",
+          "value": 2,
+          "mode": 2,
+          "priority": 20
+        }
+      ],
+      "disabled": false,
+      "duration": {
+        "startTime": null,
+        "seconds": null,
+        "rounds": null,
+        "turns": null,
+        "startRound": null,
+        "startTurn": null
+      },
+      "icon": "icons/environment/wilderness/wall-ruins.webp",
+      "label": "1/2 Cover",
+      "origin": "Item.5p1tMs7PXiV56ZcD",
+      "tint": "",
+      "transfer": true
+    },
+    {
+      "_id": "bmiOBjX004gxpnyG",
+      "flags": {
+        "dae": {
+          "stackable": false,
+          "transfer": true
+        }
+      },
+      "changes": [
+        {
+          "key": "data.attributes.ac.value",
+          "value": 5,
+          "mode": 2,
+          "priority": 20
+        },
+        {
+          "key": "data.abilities.dex.save",
+          "value": 5,
+          "mode": 2,
+          "priority": 20
+        }
+      ],
+      "disabled": false,
+      "duration": {
+        "startTime": null,
+        "seconds": null,
+        "rounds": null,
+        "turns": null,
+        "startRound": null,
+        "startTurn": null
+      },
+      "icon": "icons/environment/wilderness/wall-ruins.webp",
+      "label": "3/4 Cover",
+      "origin": "Item.5p1tMs7PXiV56ZcD",
+      "tint": "",
+      "transfer": true
+    }
+  ]
+}
