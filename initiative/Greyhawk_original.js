@@ -1407,7 +1407,7 @@ function calculateDice(combatant, actionSelections, userInput) {
 	    // lower is better, so subtract if bonus is positive
 	    // die sides equal to the absolute value of the bonus. e.g. +3 is -1d3. 
 	    console.log("Using random bonus for initiative " + bonusNumberString(initiative_bonus)); 
-	    init_roll.terms.push((initiative_bonus > 0 ? "+" : "-"));
+	    init_roll.terms.push((initiative_bonus > 0 ? "-" : "+"));
 	    init_roll.terms.push(new Die({faces: Math.abs(initiative_bonus), number: 1}));
 	  
 	  } else {
