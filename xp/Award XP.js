@@ -300,7 +300,7 @@ const dialogContent = dialogHeader + dialogStyle + dialogIntro + dialogTable + d
  * @totalAmount The total XP to be awarded. Only needed for the chat content.
  * @amountArray Array of integers representing XP to award, corresponding to each actor.
  */
-function award_xp(totalAmount, amountArray) {
+async function award_xp(totalAmount, amountArray) {
 
   //console.log("TotalEncounterXP: " + totalAmount);
   //console.log("Amount.Length: " + amountArray.length);
@@ -318,7 +318,7 @@ function award_xp(totalAmount, amountArray) {
     chatContent += `<br>${awardAmount} added to ${actor.name}.`;
     
     if(UPDATE_ACTOR_XP) {
-    actor.update({
+    await actor.update({
        "data.details.xp.value": actor.data.data.details.xp.value + awardAmount
         });
     }
@@ -329,7 +329,7 @@ function award_xp(totalAmount, amountArray) {
     const updated_notes = current_notes + `
       <p><em>${canvas.scene.name}</em> ${awardAmount} XP earned.</p>
     `
-    actor.update({
+    await actor.update({
       "data.details.notes": {value: updated_notes}
     
     });
