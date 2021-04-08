@@ -1,6 +1,8 @@
 // Chromatic Orb Macro
 // Let the user choose between different chromatic orb damage types and then cast the spell. 
 
+// If using JB2A macros, need to create separate macro for each damage animation
+const USE_MACRO = false;
 const damageFXMacros = {
   acid: "JB2A FireBolt Orange",
   cold: "JB2A FireBolt Blue",
@@ -9,6 +11,35 @@ const damageFXMacros = {
   poison: "JB2A FireBolt Green",
   thunder: "JB2A FireBolt Blue"
 };
+
+// JB2A automated animations flags, if using
+// color will be changed to match the damage type
+const USE_AA = true;
+let autoanimations = {
+  animName: "Fire Bolt",
+  animType: "t6",
+  color: "Blue",
+  dtvar: "",
+  explodeColor: "",
+  explodeLoop: "1",
+  explodeRadius: "",
+  explodeVariant: "",
+  explosion: false,
+  killAnim: false,
+  override: true
+};
+
+// color choices: Blue, Green, Orange, Purple, Red
+const AAOverrideColors = {
+   acid: "Orange",
+   cold: "Blue",
+   fire: "Red",
+   lightning: "Purple",
+   poison: "Green",
+   thunder: "Blue"
+}
+
+
 
 
 /**
@@ -85,13 +116,15 @@ if(isEmpty(targets)) {
   return;
 }
 
-const chromatic_orb_spell = selected_token.actor.items.filter(i => "spell" === i.type && ("Chromatic Orb" === i.name))[0];
+let chromatic_orb_spell = selected_token.actor.items.filter(i => "spell" === i.type && ("Chromatic Orb" === i.name))[0];
 console.log(chromatic_orb_spell);
 
 if(isEmpty(chromatic_orb_spell)) {
   ui.notifications.warn(`Chromatic orb spell not found for ${selected_token.data.name}.`);
   return;
 }
+chromatic_orb_spell = selected_token.actor.getOwnedItem(chromatic_orb_spell._id);
+
 
 const html_dialog = 
 `
@@ -121,17 +154,36 @@ chromatic_orb_damage_parts[0][1] = chosen_damage_type;
 // console.log(chromatic_orb_damage_parts);
 
 
-const upcastData = mergeObject(chromatic_orb_spell.data, {
-	"data.damage.parts": chromatic_orb_damage_parts,
+let upcastData = mergeObject(chromatic_orb_spell.data, {
+	"data.damage.parts": chromatic_orb_damage_parts
+	}, { inplace: false });
+
+if(USE_MACRO) {
+  upcastData = mergeObject(upcastData, {
 	"flags.midi-qol.onUseMacroName": damageFXMacros[chosen_damage_type]
 	}, {inplace: false});
+}
+
+if(USE_AA) {
+  autoanimations.color = AAOverrideColors[chosen_damage_type];
+
+  upcastData = mergeObject(upcastData, {
+	"flags.autoanimations": autoanimations
+	}, {inplace: false});
+}
+
 // console.log(upcastData);
 const updated_spell_to_cast = chromatic_orb_spell.constructor.createOwned(upcastData, selected_token.actor);
-console.log(updated_spell_to_cast);
+
+
+// console.log(updated_spell_to_cast);
 
 
 if(game.modules.has("midi-qol")) {
-  new MidiQOL.TrapWorkflow(selected_token.actor, updated_spell_to_cast, targets);
+  // TrapWorkflow works for midiqol but does not ask for spell level nor to use spell slot
+  // new MidiQOL.TrapWorkflow(selected_token.actor, updated_spell_to_cast, targets);
+  updated_spell_to_cast.roll();
+
 } else {
 	let chatData = await updated_spell_to_cast.roll({createMessage: false});
 	chatData.flags["dnd5e.itemData"] = updated_spell_to_cast.data;
