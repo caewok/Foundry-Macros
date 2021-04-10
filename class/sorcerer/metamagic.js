@@ -332,6 +332,7 @@ function TestMetamagicValidity(spell_chosen) {
 
   // properties to test
   const spell_range = spell_chosen_data.range.value;
+  const spell_range_units = spell_chosen_data.range.units;
   const spell_dc = spell_chosen_data.save.dc;
   const spell_dmg = spell_chosen_data.damage.parts;
   const spell_duration = spell_chosen_data.duration.value;
@@ -341,7 +342,8 @@ function TestMetamagicValidity(spell_chosen) {
 	const spell_actionType = spell_chosen_data.actionType;
 	const spell_somatic = spell_chosen_data.components.somatic;
 	const spell_vocal = spell_chosen_data.components.vocal;
-	const spell_target_units = spell_chosen_data.target.units;
+	const spell_target_type = spell_chosen_data.target.type;
+	const spell_target_number = spell_chosen_data.target.value;
 	
 
 	/* 
@@ -441,8 +443,9 @@ function TestMetamagicValidity(spell_chosen) {
    * PHB p. 102
    * Need range other than self, target single creature
    */
-   if("creature" === spell_target_units &&
-      1 === spell_range) {
+   if("creature" === spell_target_type &&
+      1 === spell_target_number && 
+      "self" !== spell_range_units) {
       valid.push("Metamagic: Twinned Spell");   
    }
    
