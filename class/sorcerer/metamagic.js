@@ -187,10 +187,10 @@ async function SelectFromSpellList(spells, invalid_spell_names = []) {
 
 	const spell_table_res = await dialogPromise(dialogSpellTable);
 	if("Cancel" === spell_table_res) {
-				console.log("User cancelled.");
+				console.log("SelectFromSpellList|User cancelled.");
 				return "CANCELED";
 			} else if("Closed" == spell_table_res) {
-				console.log("User closed");
+				console.log("SelectFromSpellList|User closed");
 				return "CLOSED";
 			}
 
@@ -202,7 +202,7 @@ async function SelectFromSpellList(spells, invalid_spell_names = []) {
 		}
 	});
 
-	console.log(spell_chosen_id);
+	console.log("SelectFromSpellList|spell chosen id", spell_chosen_id);
 	
 	return spell_chosen_id;
 	
@@ -297,10 +297,10 @@ async function SelectionDialog(options, ids = [], prompt = "", disabled = [], ty
 
 	const res = await dialogPromise(dialogTable);
 	if("Cancel" === res) {
-				console.log("User cancelled.");
+				console.log("SelectionDialog|User cancelled.");
 				return "CANCELED";
 			} else if("Closed" == res) {
-				console.log("User closed");
+				console.log("SelectionDialog|User closed");
 				return "CLOSED";
 			}
 
