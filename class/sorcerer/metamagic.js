@@ -554,8 +554,8 @@ if("CANCELED" === metamagic_chosen_id ||
    "CLOSED" === metamagic_chosen_id) return;
 
 // const metamagic_chosen = token_chosen.actor.items.filter(i => metamagic_chosen_id === i._id)[0];
-const metamagic_chosen = token_chosen.actor.getOwnedItem(metamagic_chosen_id);
-console.log("metamagic_chosen", metamagic_chosen);      
+let metamagic_chosen = token_chosen.actor.getOwnedItem(metamagic_chosen_id);
+//console.log("metamagic_chosen", metamagic_chosen);      
 
 const metamagic_chosen_name = metamagic_chosen.name;
 console.log(`Selected ${metamagic_chosen.name}:`, metamagic_chosen);                               
@@ -590,12 +590,6 @@ Provides a bonus to ability saves. This is only active if the "Use ability save 
 	  ui.notifications.error("Metamagic: Careful Spell|Requires at least one target selected.");
 	  return;
 	}
-	
-	// check that the spell requires a save
-	if(isEmpty(spell_chosen.data.data.save.dc)) {
-	  ui.notifications.error("Metamagic: Careful Spell|Requires a spell with a saving throw.")
-	}
-	
 	
 	const target_names = targets.map(t => t.data.name);
 	const target_ids = targets.map(t => t.data._id);
@@ -684,23 +678,7 @@ When you cast a spell that has a duration of 1 minute or longer, you can spend 1
 	sorcery_points_expended += 1;
 	
   const spell_duration = spell_chosen.data.data.duration.value;
-  const spell_duration_units = spell_chosen.data.data.duration.units;
-  
-  // test for invalid durations
-  // instantaneous, turns, rounds, minutes, hours, days, months, years, permanent, special
-  // units: inst, turn, round, minute, hour, day, month, year, perm, spec
-  if("round" === spell_duration_units && spell_duration < 10) {
-    // 1 round is 6 seconds
-    ui.notifications.error(`Metamagic: Extended Spell|Chosen spell is only ${spell_duration_units} ${spell_duration}.`); 
-    return;
-  } else if("inst" === spell_duration_units ||
-            "perm" === spell_duration_units ||
-            "special" === spell_duration_units ||
-            "turn" === spell_duration_units) {
-    ui.notifications.error(`Metamagic: Extended Spell|Chosen spell is ${spell_duration_units}.`);
-    return;
-  } 
-  
+    
   spell_modifications = mergeObject(spell_modifications, 
       { "data.duration.value": spell_duration * 2 });  
   
@@ -726,12 +704,6 @@ When you cast a spell that forces a creature to make a saving throw to resist it
 	  ui.notifications.error("Metamagic: Heightened Spell|Requires at least one target selected.");
 	  return;
 	}
-	
-	// check that the spell requires a save
-	if(isEmpty(spell_chosen.data.data.save.dc)) {
-	  ui.notifications.error("Metamagic: Heightened Spell|Requires a spell with a saving throw.")
-	}
-	
 	
 	const target_names = targets.map(t => t.data.name);
 	const target_ids = targets.map(t => t.data._id);
@@ -786,17 +758,9 @@ PHB p. 102
 When you cast a spell that has a casting time of 1 action, you can spend 2 sorcery points to change the casting time to 1 bonus action for this casting.
 */
 	sorcery_points_expended += 2;
-	
-	const spell_casting_time = spell_chosen.data.data.activation.cost;
-	const spell_casting_type = spell_chosen.data.data.activation.type;
-	
-	if(1 === spell_casting_time && "action" === spell_casting_type) {
-	  spell_modifications = mergeObject(spell_modifications, 
+		
+	spell_modifications = mergeObject(spell_modifications, 
       { "data.activation.type": "bonus"});
-	} else {
-	  ui.notifications.error("Chosen spell does not have a casting time of 1 action.");
-	  return;
-	}
 }
 
 
@@ -853,8 +817,6 @@ When you cast a spell that deals a type of damage from the following list, you c
     ui.notifications.error("Metamagic: Transmuted Spell|Spell does not contain valid damage type.")
     return;
   }
-  
-  
 }
 
 if(metamagic_chosen.name == "Metamagic: Twinned Spell") {
@@ -951,7 +913,8 @@ if(metamagic_chosen.name == "Metamagic: Twinned Spell") {
 		chatData.flags["dnd5e.itemData"] = updated_spell_to_cast.data;
 		ChatMessage.create(chatData);
 	}
-
+  await wait(3000);
+  console.log("Reselect all targets.");
 	targets.forEach(t => t.setTarget(true, {releaseOthers: false}));
 }
 
@@ -961,11 +924,11 @@ if(metamagic_chosen.name == "Metamagic: Twinned Spell") {
 /*
 √  "Metamagic: Careful Spell",
 √  "Metamagic: Distant Spell",
-  "Metamagic: Extended Spell",
+√  "Metamagic: Extended Spell",
 √  "Metamagic: Heightened Spell",
 √  "Metamagic: Quickened Spell",
 √  "Metamagic: Subtle Spell",
-  "Metamagic: Twinned Spell",
+√  "Metamagic: Twinned Spell",
   "Metamagic: Seeking Spell", // TCE
 √  "Metamagic: Transmuted Spell" // TCE
   
