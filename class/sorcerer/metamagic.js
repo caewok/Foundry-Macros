@@ -826,24 +826,25 @@ When you cast a spell that targets only one creature and doesn't have a range of
 
 To be eligible, a spell must be incapable of targeting more than one creature at the spell's current level. For example, magic missile and scorching ray aren't eligible, but ray of frost and chromatic orb are.
 */
-  const spell_level = spell_chosen.data.level;
+  const spell_level = parseInt( spell_chosen.data.data.level );
+  console.log(`Metamagic: Twinned Spell|Cost is ${Math.max(1, spell_level)} sorcery points.`);
+  
   sorcery_points_expended += (0 === spell_level ? 1 : spell_level);
-  
-  if("self" === spell_chosen.data.range.units) {
-    ui.notifications.error("Metamagic: Twinned Spell|Chosen spell has a range of self.")
-    return;
-  
-  } else if("creature" !== spell_chosen.data.target.units) {
-    ui.notifications.error("Metamagic: Twinned Spell|Chosen spell does not target single creature.")
-    return;
-  }
   
   // confirm that two targets are selected
   if(targets.length != 2) {
      ui.notifications.error("Metamagic: Twinned Spell|Requires two targets selected.");
 	  return;
-  } 
+  }
   
+  // temporarily set consumption amount to the number of sorcery points for this casting
+  const consumption_data = { "data.consume.amount" : Math.max(1, spell_level) };
+//   console.log("consumption_data", consumption_data);
+  const upcastData = mergeObject(metamagic_chosen.data, consumption_data);
+//   console.log("upcastData", upcastData);
+  metamagic_chosen = metamagic_chosen.constructor.createOwned(upcastData,
+                                      token_chosen.actor);
+//   console.log("metamagic_chosen", metamagic_chosen);                              
 }
 
 // apply the metamagic feature, which can be tied to using sorcerer points
@@ -882,6 +883,7 @@ console.log("Updated spell to cast:", updated_spell_to_cast);
 if(metamagic_chosen.name == "Metamagic: Twinned Spell") {
   // run one, then the second target.
   targets[0].setTarget(true, {releaseOthers: true});
+  console.log("Setting target to", targets[0]);
 	await wait(100);
 }
 
@@ -895,14 +897,16 @@ if(game.modules.has("midi-qol")) {
 	ChatMessage.create(chatData);
 }
 // 
-// console.log("Roll result", res);
+console.log("Roll result", res);
 // console.log("Roll result roll", res.getRollData());
 // console.log(`Roll result message ${res.data.content}`);
 
 
 if(metamagic_chosen.name == "Metamagic: Twinned Spell") {
   // run one, then the second target.
+  await wait(3000);
   targets[1].setTarget(true, {releaseOthers: true});
+  console.log("Setting target to", targets[1]);
 	await wait(100);
 	
 	if(game.modules.has("midi-qol")) {
