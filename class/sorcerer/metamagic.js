@@ -12,7 +12,7 @@
 const METAMAGIC_FEATS = [
   "Metamagic: Careful Spell",
   "Metamagic: Distant Spell",
-  // "Metamagic: Empowered Spell", // not in selection
+  // "Metamagic: Empowered Spell", // separate macro to handle
   "Metamagic: Extended Spell",
   "Metamagic: Heightened Spell",
   "Metamagic: Quickened Spell",
@@ -914,53 +914,6 @@ if(!isEmpty(spell_modifications)) {
 console.log("Updated spell to cast:", updated_spell_to_cast);
 
 
-// if(metamagic_chosen.name == "Metamagic: Seeking Spell") {
-// /*
-// Tasha's p. 66.
-// If you make an attack roll for a spell and miss, you can spend 2 sorcery points to reroll the d20, and you must use the new roll.
-// 
-// You can use Seeking Spell even if you have already used a different Metamagic option during the casting of the spell.
-// */
-//   sorcery_points_expended += 2;
-//   
-//   // check for whether an attack roll must be made; error otherwise
-//   // when the attack is rolled, use rollAttack and check if the attack hit, then rollDamage
-// }
-
-// if(metamagic_chosen.name == "Metamagic: Empowered Spell") {
-// /*
-// PHB p. 102
-// When you roll damage for a spell, you can spend 1 sorcery point to reroll a number of the damage dice up to your Charisma modifier (minimum of one). You must use the new rolls.
-// 
-// You can use Empowered Spell even if you have already used a different Metamagic option during the casting of the spell.
-// 
-// Can use after rolling the damage...
-// */
-// 	sorcery_points_expended += 1;
-// 	
-// 	// split into attack and damage rolls, reroll damage dice manually? 
-//   
-// 
-// }
-
-// chat_content is chat.data.content
-function ParseChatDamageRoll(chat_content) {
-  // replace new lines so that the below .* captures correctly
-  chat_content = chat_content.replace(/\r?\n|\r/gm, " ");
-
-//   console.log("ParseChatDamageRoll|chat_content\n${chat_content}", chat_content);
-  
-  // find the damage roll part of the chat message
-  const re_dmg_txt = /<div class="midi-qol-damage-roll">(.*)<div class="end-midi-qol-damage-roll">/;
-  const dmg_text = chat_content.match(re_dmg_txt);
-//   console.log("ParseChatDamageRoll|dmg_text\n${dmg_text}", dmg_text);
-  
-  // find the individual damage die rolls
-  const re_dmg_rolls = /roll die d(?<die>[0-9]{1,2}).*?>(?<roll>[0-9]{1,2})</g;
-  const dmg_rolls = dmg_text[0].matchAll(re_dmg_rolls);  
-  return dmg_rolls;
-}
-
 if(metamagic_chosen.name == "Metamagic: Twinned Spell") {
   // run one, then the second target.
   targets[0].setTarget(true, {releaseOthers: true});
@@ -982,84 +935,6 @@ if(game.modules.has("midi-qol")) {
 // console.log(`Roll result message ${res.data.content}`);
 
 
-
-
-
-
-
-
-
-if(valid_metamagic_names.includes("Metamagic: Empowered Spell")) {
-/*
-PHB p. 102
-When you roll damage for a spell, you can spend 1 sorcery point to reroll a number of the damage dice up to your Charisma modifier (minimum of one). You must use the new rolls.
-
-You can use Empowered Spell even if you have already used a different Metamagic option during the casting of the spell.
-
-Can use after rolling the damage...
-*/
-
-  // at the time the macro is run, the result does not have the roll results.
-  // try waiting, getting the correct message, and then pulling the roll data.
-  await wait(3000);
-  const res_msg = game.messages.get(res.data._id);
-  let orig_dmg_rolls = ParseChatDamageRoll(res_msg.data.content); // returns iterable matchAll object
-  
-  orig_dmg_rolls = Array.from(orig_dmg_rolls);  // die is 1, roll is 2
-  console.log(orig_dmg_rolls);
-  const dmg_names = orig_dmg_rolls.map(d => `${d[2]} (d${d[1]})`);
-  const dmg_index = Array.from(Array(dmg_names.length).keys());
-  
-  console.log(dmg_names);
-  console.log(dmg_index);
-
-  if(dmg_names.length > 0) {
-
-  const max_dice = Math.max(1, token_chosen.actor.data.data.abilities.cha.mod);
-  const empowered_dice = await SelectionDialog(dmg_names,
-                               dmg_index,
-                               "If you want to use Empowered Spell, select one or more damage die to reroll",
-                               [],
-                               "checkbox",
-                               max_dice);
-
-  console.log("empowered_dice", empowered_dice);
-  
-  if("CANCELED" === empowered_dice ||
-   "CLOSED" === empowered_dice ||
-   empowered_dice.length === 0) return;
-   
-   // reroll the chosen die or dice, and create a chat entry with the full results.
-   // assuming for now all damage dice are of the same type
-   let roll_txt = `${dmg_rolls.length}d${dmg_rolls[1][1]}`;
-   
-   let empowered_roll = new Roll(roll_txt);
-   empowered_roll.evaluate();
-   
-   // if not one of the selected empowered dice, then reset to the original roll
-   nonempowered_dice = index.filter(x => !empowered_dice.includes(x));
-   nonempowered_dice.forEach(d => {
-     empowered_roll.terms[0].results[d].result = orig_dmg_rolls[d][2];
-   });
-   
-   // update the totals
-   // do we need to care about checking for active in the results?
-   empowered_roll.results[0] = empowered_roll.terms[0].results.reduce((acc, obj) => acc + obj.result, 0); 
-   empowered_roll._total = empowered_roll.results[0];
-   empowered_roll.toMessage({
-     flavor: `Metamagic: Empowered Spell | Re-rolled ${empowered_dice.length} die.`
-   });   
-
-
-empowered_roll.toMessage({
-     flavor: `Metamagic: Empowered Spell | Re-rolled 3 die.`
-   }); 
-
-}
-
-
-
-
 if(metamagic_chosen.name == "Metamagic: Twinned Spell") {
   // run one, then the second target.
   targets[1].setTarget(true, {releaseOthers: true});
@@ -1079,16 +954,10 @@ if(metamagic_chosen.name == "Metamagic: Twinned Spell") {
 
 
 
-
-
-
-
-
 // Tested:
 /*
 √  "Metamagic: Careful Spell",
 √  "Metamagic: Distant Spell",
-  // "Metamagic: Empowered Spell", // not in selection
   "Metamagic: Extended Spell",
 √  "Metamagic: Heightened Spell",
 √  "Metamagic: Quickened Spell",
