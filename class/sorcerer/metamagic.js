@@ -837,19 +837,14 @@ To be eligible, a spell must be incapable of targeting more than one creature at
 	  return;
   }
   
-  // temporarily set consumption amount to the number of sorcery points for this casting
-  const consumption_data = { "data.consume.amount" : Math.max(1, spell_level) };
-//   console.log("consumption_data", consumption_data);
-  const upcastData = mergeObject(metamagic_chosen.data, consumption_data);
-//   console.log("upcastData", upcastData);
-  metamagic_chosen = metamagic_chosen.constructor.createOwned(upcastData,
-                                      token_chosen.actor);
-//   console.log("metamagic_chosen", metamagic_chosen);                              
+
+
+                             
 }
 
 // apply the metamagic feature, which can be tied to using sorcerer points
 // Await it in case user cancels, and to get the right order.
-await metamagic_chosen.roll();
+
 
 console.log("Spell modifications:", spell_modifications);
 
@@ -857,7 +852,7 @@ let updated_spell_to_cast = {};
 
 if(!isEmpty(spell_modifications)) {
   const upcastData = mergeObject(spell_chosen.data, spell_modifications, 
-                                 {inplace: false});
+                                 { inplace: false });
   console.log("Upcast data: ", upcastData);                 
   // randomID()              
 
@@ -877,14 +872,20 @@ if(!isEmpty(spell_modifications)) {
   updated_spell_to_cast = spell_chosen;
 
 }
-console.log("Updated spell to cast:", updated_spell_to_cast);
 
+console.log("Updated spell to cast:", updated_spell_to_cast);
 
 if(metamagic_chosen.name == "Metamagic: Twinned Spell") {
   // run one, then the second target.
   targets[0].setTarget(true, {releaseOthers: true});
   console.log("Setting target to", targets[0]);
-	await wait(100);
+	await wait(500);
+	
+	// need to wait to display twinned spell until we learn the spell level
+	
+} else {
+  // can display the metamagic feature to chat, which if set up correctly will deduct points accordingly.
+  await metamagic_chosen.roll();
 }
 
 let res = {};
@@ -902,18 +903,74 @@ console.log("Roll result", res);
 // console.log(`Roll result message ${res.data.content}`);
 
 
+function ParseSpellLevelCast(chat_content) {
+  // replace new lines so that the below .* captures correctly
+  chat_content = chat_content.replace(/\r?\n|\r/gm, " ");
+  
+  // find the footer part of the chat message
+  const re_footer_txt = /<footer class="card-footer">(.*)<\/footer>/;
+  const footer_txt = chat_content.match(re_footer_txt);
+  console.log("ParseSpellLevelCast|footer_txt", footer_txt);
+  
+  // find the spell level
+  // Either Cantrip, 1st Level, 2nd Level, etc.
+  const re_spell_lvl = /<span>(Cantrip|[1-9][stndrh]{2} Level)<\/span>/;
+  const spell_lvl = footer_txt[1].match(re_spell_lvl);
+  console.log("ParseSpellLevelCast|spell_lvl", spell_lvl);
+  
+  switch(spell_lvl[1]) {
+    case "Cantrip": return 0;
+    case "1st Level": return 1;
+    case "2nd Level": return 2;
+    case "3rd Level": return 3;
+    case "4th Level": return 4;
+    case "5th Level": return 5;
+    case "6th Level": return 6;
+    case "7th Level": return 7;
+    case "8th Level": return 8;
+    case "9th Level": return 9;
+    default: return -1;
+  }
+  
+  return -1; // should never hit this
+}
+
+//console.log(`Spell level cast was ${ParseSpellLevelCast(res.data.content)}`);
+
+
 if(metamagic_chosen.name == "Metamagic: Twinned Spell") {
+  
   // run one, then the second target.
-  await wait(3000);
-  targets[1].setTarget(true, {releaseOthers: true});
+  await wait(5000);
+  targets[1].setTarget(true, { releaseOthers : true });
   console.log("Setting target to", targets[1]);
-	await wait(100);
+	await wait(500);
+	
+	const casting_lvl = ParseSpellLevelCast(res.data.content);
+	// temporarily set consumption amount to the number of sorcery points for this casting
+  const consumption_data = { "data.consume.amount" : Math.max(1, casting_lvl) };
+	//   console.log("consumption_data", consumption_data);
+  const upcastMetamagicData = mergeObject(metamagic_chosen.data, consumption_data);
+	//   console.log("upcastData", upcastData);
+  metamagic_chosen = metamagic_chosen.constructor.createOwned(upcastMetamagicData,
+                                      token_chosen.actor);
+	//   console.log("metamagic_chosen", metamagic_chosen); 
+  await metamagic_chosen.roll();
+	
+	// temporarily change to at-will casting 
+	const upcastSpellData = mergeObject(updated_spell_to_cast.data, 
+	                              { "data.preparation.mode" : "atwill",
+	                                "data.level" : casting_lvl }, 
+                                { inplace : false });
+	updated_spell_to_cast = spell_chosen.constructor.createOwned(upcastSpellData, 
+																		token_chosen.actor);
+	
 	
 	if(game.modules.has("midi-qol")) {
 		updated_spell_to_cast.roll();
 		//new MidiQOL.TrapWorkflow(token_chosen.actor, updated_spell_to_cast, targets);
 	} else {
-		let chatData = await updated_spell_to_cast.roll({createMessage: false});
+		let chatData = await updated_spell_to_cast.roll({ createMessage : false });
 		chatData.flags["dnd5e.itemData"] = updated_spell_to_cast.data;
 		ChatMessage.create(chatData);
 	}
