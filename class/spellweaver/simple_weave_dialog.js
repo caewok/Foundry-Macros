@@ -678,7 +678,7 @@ if("none" === facet_roll_type ||
   }
   
   facet_check_flavor += `
-  <b>Spell points:</b> ${spell_points_needed} (${Math.floor(spell_points_needed / 4)} if failed)<br>
+  <b>Spell points:</b> ${spell_points_needed} <br>
   `
   
   
@@ -706,10 +706,9 @@ if("none" === facet_roll_type ||
 
 console.log("Was weaving successful? " + successful_weaving);
 // if successful, subtract spell points
-// if not, subtract 1/4 spell points
 // post message
 
-let spell_points_to_subtract = successful_weaving ? spell_points_needed : Math.floor(spell_points_needed / 4);
+let spell_points_to_subtract = successful_weaving ? spell_points_needed : 0);
 
 if(USE_SPELL_POINTS_MODULE && successful_weaving) {
  // omit the points for the basic spell level
