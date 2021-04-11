@@ -18,7 +18,7 @@ const METAMAGIC_FEATS = [
   "Metamagic: Quickened Spell",
   "Metamagic: Subtle Spell",
   "Metamagic: Twinned Spell",
-  "Metamagic: Seeking Spell", // TCE
+  // "Metamagic: Seeking Spell", // TCE // just re-roll manually and decline to deduct the spell slot! Should even work with metamagic; just decline to deduct the sorcery points! 
   "Metamagic: Transmuted Spell" // TCE
 ];
 
