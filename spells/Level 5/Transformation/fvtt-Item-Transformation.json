@@ -1,0 +1,198 @@
+{
+  "_id": "eH2lnxErmGQTVykz",
+  "name": "Tenser's Transformation",
+  "type": "spell",
+  "data": {
+    "description": {
+      "value": "<div  class=\"rd__b  rd__b--3\"><p>You endow yourself with endurance and martial prowess fueled by magic. Until the spell ends, you can't cast spells, and you gain the following benefits:</p><div class=\"rd__spc-inline-post\"></div><ul class=\"rd__list\"><li class=\"rd__li \">You gain 50 temporary hit points. If any of these remain when the spell ends, they are lost.</li><li class=\"rd__li \">You have advantage on attack rolls that you make with simple and martial weapons.</li><li class=\"rd__li \">When you hit a target with a weapon attack, that target takes an extra [[/r 2d12]] force damage.</li><li class=\"rd__li \">You have proficiency with all armor, shields, simple weapons, and martial weapons.</li><li class=\"rd__li \">You have proficiency in Strength and Constitution saving throws.</li><li class=\"rd__li \">You can attack twice, instead of once, when you take the <a href=\"https://5e.tools/actions.html#attack_phb\"  onmouseover=\"Renderer.hover.pHandleLinkMouseOver(event, this, 'actions.html', 'PHB', 'attack_phb', null)\" onmouseleave=\"Renderer.hover.handleLinkMouseLeave(event, this)\" onmousemove=\"Renderer.hover.handleLinkMouseMove(event, this)\"  ontouchstart=\"Renderer.hover.handleTouchStart(event, this)\" >Attack</a> action on your turn. You ignore this benefit if you already have a feature, like Extra Attack, that gives you extra attacks.</li></ul><p>Immediately after the spell ends, you must succeed on a DC 15 Constitution saving throw or suffer one level of <a href=\"https://5e.tools/conditionsdiseases.html#exhaustion_phb\"  onmouseover=\"Renderer.hover.pHandleLinkMouseOver(event, this, 'conditionsdiseases.html', 'PHB', 'exhaustion_phb', null)\" onmouseleave=\"Renderer.hover.handleLinkMouseLeave(event, this)\" onmousemove=\"Renderer.hover.handleLinkMouseMove(event, this)\"  ontouchstart=\"Renderer.hover.handleTouchStart(event, this)\" >exhaustion</a>.</p></div>",
+      "chat": "",
+      "unidentified": ""
+    },
+    "source": "XGE",
+    "activation": {
+      "type": "action",
+      "cost": 1,
+      "condition": ""
+    },
+    "duration": {
+      "value": 10,
+      "units": "minute"
+    },
+    "target": {
+      "value": null,
+      "width": null,
+      "units": "",
+      "type": "self"
+    },
+    "range": {
+      "value": null,
+      "long": null,
+      "units": "self"
+    },
+    "uses": {
+      "value": 0,
+      "max": "0",
+      "per": ""
+    },
+    "consume": {
+      "type": "",
+      "target": "",
+      "amount": null
+    },
+    "ability": "",
+    "actionType": "save",
+    "attackBonus": 0,
+    "chatFlavor": "",
+    "critical": null,
+    "damage": {
+      "parts": [],
+      "versatile": ""
+    },
+    "formula": "",
+    "save": {
+      "ability": "",
+      "dc": null,
+      "scaling": "spell"
+    },
+    "level": 6,
+    "school": "trs",
+    "components": {
+      "value": "",
+      "vocal": true,
+      "somatic": true,
+      "material": true,
+      "ritual": false,
+      "concentration": true
+    },
+    "materials": {
+      "value": "a few hairs from a bull",
+      "consumed": false,
+      "cost": 0,
+      "supply": 0
+    },
+    "preparation": {
+      "mode": "prepared",
+      "prepared": false
+    },
+    "scaling": {
+      "mode": "none",
+      "formula": ""
+    }
+  },
+  "sort": 500000,
+  "flags": {
+    "midi-qol": {
+      "onUseMacroName": "Add Temp HP"
+    },
+    "autoanimations": {
+      "killAnim": false,
+      "override": false,
+      "animType": "t1",
+      "animName": "",
+      "hmAnim": "a1",
+      "color": "n1",
+      "dtvar": "dt1",
+      "explosion": false,
+      "explodeVariant": "ev1",
+      "explodeColor": "ec1",
+      "explodeRadius": "0",
+      "explodeLoop": "1",
+      "selfRadius": "5",
+      "animTint": "#ffffff",
+      "auraOpacity": 0.75,
+      "ctaOption": false
+    },
+    "exportSource": {
+      "world": "dragon-mountain",
+      "system": "dnd5e",
+      "coreVersion": "0.7.9",
+      "systemVersion": "1.2.4"
+    }
+  },
+  "img": "modules/plutonium/media/icon/spell/xge-tensers-transformation.jpg",
+  "effects": [
+    {
+      "_id": "CBJPw1gbM1nQEC0Z",
+      "flags": {
+        "dae": {
+          "stackable": false,
+          "macroRepeat": "none",
+          "transfer": false
+        },
+        "ActiveAuras": {
+          "isAura": false,
+          "ignoreSelf": false,
+          "hidden": false,
+          "height": false,
+          "alignment": "",
+          "type": "",
+          "aura": "None",
+          "radius": null,
+          "save": "",
+          "savedc": null,
+          "hostile": false,
+          "onlyOnce": false,
+          "time": "None"
+        }
+      },
+      "changes": [
+        {
+          "key": "flags.midi-qol.advantage.attack.all",
+          "value": "1",
+          "mode": 0,
+          "priority": 20
+        },
+        {
+          "key": "data.bonuses.mwak.damage",
+          "value": "2d12",
+          "mode": 0,
+          "priority": 20
+        },
+        {
+          "key": "data.bonuses.rwak.damage",
+          "value": "2d12",
+          "mode": 0,
+          "priority": 20
+        },
+        {
+          "key": "data.traits.armorProf.all",
+          "value": "1",
+          "mode": 0,
+          "priority": 20
+        },
+        {
+          "key": "data.traits.weaponProf.all",
+          "value": "1",
+          "mode": 0,
+          "priority": 20
+        },
+        {
+          "key": "data.abilities.str.proficient",
+          "value": 1,
+          "mode": 0,
+          "priority": 20
+        },
+        {
+          "key": "data.abilities.con.proficient",
+          "value": 1,
+          "mode": 0,
+          "priority": 20
+        }
+      ],
+      "disabled": false,
+      "duration": {
+        "startTime": null,
+        "seconds": 600,
+        "rounds": 1,
+        "turns": null,
+        "startRound": null,
+        "startTurn": null
+      },
+      "icon": "icons/svg/biohazard.svg",
+      "label": "Transformations",
+      "origin": "Item.eH2lnxErmGQTVykz",
+      "tint": "",
+      "transfer": false
+    }
+  ]
+}
