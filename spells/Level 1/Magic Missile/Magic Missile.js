@@ -25,11 +25,14 @@ function isEmpty(str) {
     return is_empty;
   }
 
+
+
 if(args.length < 1) {
   ui.notifications.error("Magic Missile Macro|Arguments not found.");
   return;
 }
 console.log("Magic Missile Macro|args", args);
+
 
 
 const num_missiles = 2 + Number(args[0].spellLevel);
@@ -43,6 +46,8 @@ const tokenD = canvas.tokens.get(token_id);
 
 console.log("Magic Missile Macro|actorD", actorD);
 console.log("Magic Missile Macro|tokenD", tokenD);
+
+(async()=>{
 
 if(target_ids.length === 1) {
   console.log("Magic Missile Macro|Single target.");
@@ -134,3 +139,4 @@ if(target_ids.length === 1) {
   ui.notifications.error("Magic Missile Macro|No targets selected.");
 }
 
+})();
