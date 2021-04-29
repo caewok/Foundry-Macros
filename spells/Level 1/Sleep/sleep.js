@@ -31,12 +31,12 @@ for(let i = 0; i < await targets.length; i++) {
     if((remainingSleepHp >= targetHpValue) && (!game.cub.hasCondition(condition, target))){
       remainingSleepHp -= targetHpValue;
       console.log(`Sleeping =>`,target.name, `Total HP:`, targetHpValue, `Remaining SleepHP:`, remainingSleepHp);
-      slept_target.push(`<div class="midi-qol-flex-container"><div>hits</div><div class="midi-qol-target-npc midi-qol-target-name" id="${target.id}"> ${target.name}</div><div><img src="${target.data.img}" width="30" height="30" style="border:0px"></div></div>`);
+      slept_target.push(`<div class="midi-qol-flex-container"><div>affects</div><div class="midi-qol-target-npc midi-qol-target-name" id="${target.id}"> ${target.name}</div><div><img src="${target.data.img}" width="30" height="30" style="border:0px"></div></div>`);
       Cub_Condition.execute(target.id, condition, "add");
     }
     if((remainingSleepHp < targetHpValue) && (!game.cub.hasCondition(condition, target))) {
       console.log(`Resisted =>`, target.name,`Total HP:`,targetHpValue);
-      slept_target.push(`<div class="midi-qol-flex-container"><div>miss</div><div class="midi-qol-target-npc midi-qol-target-name" id="${target.id}"> ${target.name}</div><div><img src="${target.data.img}" width="30" height="30" style="border:0px"></div></div>`);
+      slept_target.push(`<div class="midi-qol-flex-container"><div>does not affect</div><div class="midi-qol-target-npc midi-qol-target-name" id="${target.id}"> ${target.name}</div><div><img src="${target.data.img}" width="30" height="30" style="border:0px"></div></div>`);
     }
   }
 }
