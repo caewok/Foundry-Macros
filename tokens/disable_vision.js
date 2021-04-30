@@ -1,17 +1,11 @@
 // Disable vision for selected tokens
 
-/**
- * Retrieve selected tokens
- * @return Array of tokens
- */
-function RetrieveSelectedTokens() {
-  return canvas.tokens.controlled;
+async function vision_off() {
+   await canvas.tokens.updateAll(
+    t => ({_id: t.id, vision: false}),
+    t => canvas.tokens.controlled.includes(t)
+   );
 }
+vision_off();
 
-
-let selected_tokens = RetrieveSelectedTokens();
-for ( let token of selected_tokens ) {
-  token.update({ vision: false });
-}
-
-ui.notifications.info(`Vision disabled for ${selected_tokens.length} selected tokens.`);
+ui.notifications.info(`Vision disabled for ${canvas.tokens.controlled.length} selected tokens.`);

@@ -1,17 +1,11 @@
 // Enable vision for selected tokens
 
-/**
- * Retrieve selected tokens
- * @return Array of tokens
- */
-function RetrieveSelectedTokens() {
-  return canvas.tokens.controlled;
+async function vision_on() {
+   await canvas.tokens.updateAll(
+    t => ({_id: t.id, vision: true}),
+    t => canvas.tokens.controlled.includes(t)
+   );
 }
+vision_on();
 
-
-let selected_tokens = RetrieveSelectedTokens();
-for ( let token of selected_tokens ) {
-  token.update({ vision: true });
-}
-
-ui.notifications.info(`Vision enabled for ${selected_tokens.length} selected tokens.`);
+ui.notifications.info(`Vision enabled for ${canvas.tokens.controlled.length} selected tokens.`);
