@@ -163,7 +163,7 @@ if(in_range_targets.length === 1) {
 							const get_target = canvas.tokens.get(selected_target.name);
 							for(let i = 0; i < damageNum; i++) {
 								get_target.setTarget(true, { releaseOthers : true });		
-								const roll_result = await updated_spell_to_cast.roll({configureDialog: false})
+								const roll_result = await updated_spell_to_cast.roll()
 								console.log("Scorching Ray Macro|roll_result", roll_result);
 								await wait(WAIT_MS);
 							}					  
