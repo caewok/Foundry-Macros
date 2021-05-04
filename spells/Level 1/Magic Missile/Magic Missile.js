@@ -13,19 +13,6 @@ async function wait(ms) {
   });
 }
 
-/**
- * Test for blank or empty string
- * https://stackoverflow.com/questions/154059/how-can-i-check-for-an-empty-undefined-null-string-in-javascript
- * @str String or object
- * @return True if object is blank ("") or empty.
- */  
-function isEmpty(str) {
-    const is_empty = (!str || /^\s*$/.test(str));
-    //console.log("isEmpty? " + is_empty);
-    return is_empty;
-  }
-
-
 
 if(args.length < 1) {
   ui.notifications.error("Magic Missile Macro|Arguments not found.");
@@ -47,13 +34,14 @@ const tokenD = canvas.tokens.get(token_id);
 console.log("Magic Missile Macro|actorD", actorD);
 console.log("Magic Missile Macro|tokenD", tokenD);
 
-(async()=>{
+//(async()=>{
 
 if(target_ids.length === 1) {
   console.log("Magic Missile Macro|Single target.");
   
   let the_target = canvas.tokens.get(target_ids[0].id);
   const damageRoll = new Roll(`(1d4 +1)*${num_missiles}`).roll();
+  console.log(`Magic Missile Macro|damageRoll`, damageRoll);
   new MidiQOL.DamageOnlyWorkflow(actorD, tokenD, damageRoll.total, DAMAGE_TYPE, [the_target], damageRoll, {itemCardId: item_card_id}); 
   const damage_target = `<div class="midi-qol-flex-container"><div>hits</div><div class="midi-qol-target-npc midi-qol-target-name" id="${the_target.id}"> ${the_target.name}</div><div><img src="${the_target.data.img}" width="30" height="30" style="border:0px"></div></div>`;
   await wait(1000);
@@ -96,27 +84,29 @@ if(target_ids.length === 1) {
 				if (spentTotal > num_missiles) return ui.notifications.error(`The spell fails, You assigned more bolts then you have.`);
 				let damage_target = [];
 				const damageRoll = new Roll(`1d4 +1`).roll();
+				console.log(`Magic Missile Macro|damageRoll`, damageRoll);
 				//game.dice3d?.showForRoll(damageRoll);
+				
+				// cycle through each target
+				// for each, run the damage only workflow for each animation, applying the same damage each time
 				for(let selected_target of selected_targets) {
-					let damageNum = selected_target.value;
+					const damageNum = parseInt(selected_target.value)||0;
 					console.log(`Magic Missile Macro|damageNum for ${selected_target.name}`, damageNum);
 					
-					if (!isEmpty(damageNum)) {
-					  damageNum = parseInt(damageNum);
-						const target_id = selected_target.name;
+					if (damageNum > 0) {
+					  const target_id = selected_target.name;
 						console.log("Magic Missile Macro|target_id", target_id);
 						
 						const get_target = canvas.tokens.get(target_id);
-						let totalDamage = damageNum * damageRoll.total;
-						new MidiQOL.DamageOnlyWorkflow(actorD, tokenD, totalDamage, DAMAGE_TYPE, [get_target], damageRoll, {itemCardId: args[0].itemCardId});
-						damage_target.push(`<div class="midi-qol-flex-container"><div>hits ${damageNum > 1 ? " (x2) " : "" }</div><div class="midi-qol-target-npc midi-qol-target-name" id="${get_target.id}"> ${get_target.name}</div><div><img src="${get_target.data.img}" width="30" height="30" style="border:0px"></div></div>`);
-					  
-					  	if(MM_ANIMATION) {
-								for(let i = 0; i < damageNum; i++) {
-									await MM_ANIMATION.execute(token_id, target_id, COLOR);
-								}
-							}
-					}
+						
+						for(let i = 0; i < damageNum; i++) {
+						  new MidiQOL.DamageOnlyWorkflow(actorD, tokenD, damageRoll.total, DAMAGE_TYPE, [get_target], damageRoll, {itemCardId: args[0].itemCardId});
+						  if(MM_ANIMATION) { await MM_ANIMATION.execute(token_id, target_id, COLOR); }
+						}
+						damage_target.push(`<div class="midi-qol-flex-container"><div>hits ${damageNum > 1 ? (" (x" + damageNum.toString() + ")") : "" }</div><div class="midi-qol-target-npc midi-qol-target-name" id="${get_target.id}"> ${get_target.name}</div><div><img src="${get_target.data.img}" width="30" height="30" style="border:0px"></div></div>`);
+
+					}  	
+					
 				}
 				let damage_list = damage_target.join('');
 				await wait(1000);
@@ -139,4 +129,4 @@ if(target_ids.length === 1) {
   ui.notifications.error("Magic Missile Macro|No targets selected.");
 }
 
-})();
+//})();
