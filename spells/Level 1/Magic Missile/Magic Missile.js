@@ -66,12 +66,53 @@ if(target_ids.length === 1) {
   
   let targetList = "";
 	for (let t of target_ids) {
-		 targetList += `<tr><td>${t.name}</td><td><input type="number" id="target" min="0" max="${num_missiles}" name="${t.id}"></td></tr>`;
+		 targetList += `<tr><td>${t.name}</td><td><input type="number" id="target" class="Selection" min="0" max="${num_missiles}" name="${t.id}"></td></tr>`;
 	}
 	
-	const the_content = `<p>You have currently <b>${num_missiles}</b> total <em>magic missile</em> bolts.</p><form class="flexcol"><table width="100%"><tbody><tr><th>Target</th><th>Number Bolts</th></tr>${targetList}</tbody></table></form>`;
+	const html_header = 
+`
+<script src="https://code.jquery.com/jquery-3.4.1.js"   
+         integrity="sha256-WpOohJOqMqqyKL9FccASB9O0KwACQJpFTUBLTYOVvVU="   
+         crossorigin="anonymous"> </script>
+`;
+	
+	const html_script = 
+`
+<script>
+function recalculate() {
+	
+	const num_missiles = ${num_missiles};
+	let num_selected = 0; 
+	$('input[type="number"].Selection').each(function () {
+     num_selected += parseInt( $(this).val() )||0;
+     });
+	  
+	// update html text displaying the total number
+    $('#Total').text(num_missiles -  num_selected);
+	}
+	
+	$('.Selection').change( function() { 
+    //console.log("Selection changed.");
+    recalculate();   
+  });
+  
+  
+  $(document).ready(function() {
+    //console.log("Document ready");
+    recalculate();
+  });
+</script>
+`;
+
+  
+	
+	
+	const html_body = `<p>You have currently <span id="Total"></span> <em>magic missiles</em> remaining.</p><form class="flexcol"><table width="100%"><tbody><tr><th>Target</th><th>Number Bolts</th></tr>${targetList}</tbody></table></form>`;
+	
+	const the_content = html_header + html_script + html_body;
+	
 	new Dialog({
-			title: "Magic Missle Damage",
+			title: "Magic Missile Damage",
 			content: the_content,
 			buttons: {
 			one: { label: "Damage", callback: async (html) => {
