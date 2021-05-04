@@ -8,9 +8,9 @@
 // Scorching Ray spell item should be set to Utility
 // Why not set to ranged spell attack and have midi-qol roll the attacks in the first instance?
 // -- because scorching ray requires one attack rolls per ray, which means a single target could be subject to multiple attacks.
-// -- This macro is overkill: Simpler way would be to just roll the spell manually, once per ray. Only use the spell slot on the first roll.
+// Note: This macro is overkill: Simpler way would be to just roll the spell manually, once per ray, and only use the spell slot on the first roll.
 
-const WAIT_MS = 3000;
+const WAIT_MS = 1000;
 
 async function wait(ms) {
   return new Promise(resolve => {
@@ -106,15 +106,15 @@ const spell_modifications = {
 }
 
 const upcastData = mergeObject(spell_original.data, spell_modifications, { inplace: false });
-console.log("Scorching Ray Macro|Upcast data: ", upcastData);                 
+// console.log("Scorching Ray Macro|Upcast data: ", upcastData);                 
   // randomID()              
 
 	// two versions: either just use createOwned or first create a temporary item (which changes the id) and then use createOwned
 	// dnd5e uses createOwned when upcasting a spell
 	// this casts the spell but the resulting chat message damage uses the original unmodified spell (test by clicking place template; it will revert back to 15-feet)
-const updated_spell_to_cast = spell_original.constructor.createOwned(upcastData, 
-																		actorD);
-console.log("Scorching Ray Macro|updated_spell_to_cast", updated_spell_to_cast);               							
+// const updated_spell_to_cast = spell_original.constructor.createOwned(upcastData, 
+//																		actorD);
+// console.log("Scorching Ray Macro|updated_spell_to_cast", updated_spell_to_cast);               							
 
 // Get targets using dialog. 
 if(in_range_targets.length === 1) {
@@ -124,8 +124,11 @@ if(in_range_targets.length === 1) {
     const get_target = canvas.tokens.get(in_range_targets[0].id);
     get_target.setTarget(true, { releaseOthers : true });
     
-    // showFullCard: true will display the card but not the results
-    const roll_result = await updated_spell_to_cast.roll({configureDialog: false})
+    const updated_spell_to_cast = spell_original.constructor.createOwned(upcastData, 
+																		actorD, {temporary: true});
+							
+		const roll_result = new MidiQOL.TrapWorkflow(actorD, updated_spell_to_cast, [get_target]);
+//     const roll_result = await updated_spell_to_cast.roll({configureDialog: false})
     console.log("Scorching Ray Macro|roll_result", roll_result);
     await wait(WAIT_MS);
   }
@@ -135,13 +138,54 @@ if(in_range_targets.length === 1) {
   
   let targetList = "";
 	for (let t of in_range_targets) {
-		 targetList += `<tr><td>${t.name}</td><td><input type="number" id="target" min="0" max="${num_missiles}" name="${t.id}"></td></tr>`;
+		 targetList += `<tr><td>${t.name}</td><td><input type="number" id="target" class="Selection" min="0" max="${num_missiles}" name="${t.id}"></td></tr>`;
 	}
 	
-	const the_content = `<p>You have currently <b>${num_missiles}</b> total rays.</p><form class="flexcol"><table width="100%"><tbody><tr><th>Target</th><th>Number Rays</th></tr>${targetList}</tbody></table></form>`;
+	
+	const html_header = 
+`
+<script src="https://code.jquery.com/jquery-3.4.1.js"   
+         integrity="sha256-WpOohJOqMqqyKL9FccASB9O0KwACQJpFTUBLTYOVvVU="   
+         crossorigin="anonymous"> </script>
+`;
+	
+	const html_script = 
+`
+<script>
+function recalculate() {
+	
+	const num_missiles = 3;
+	let num_selected = 0; 
+	$('input[type="number"].Selection').each(function () {
+     num_selected += parseInt( $(this).val() )||0;
+     });
+	  
+	// update html text displaying the total number
+    $('#Total').text(num_missiles -  num_selected);
+	}
+	
+	$('.Selection').change( function() { 
+    //console.log("Selection changed.");
+    recalculate();   
+  });
+  
+  
+  $(document).ready(function() {
+    //console.log("Document ready");
+    recalculate();
+  });
+</script>
+`;
+	
+	
+	const html_body = `<p>You have currently <span id="Total"></span> rays remaining.</p><form class="flexcol"><table width="100%"><tbody><tr><th>Target</th><th>Number Rays</th></tr>${targetList}</tbody></table></form>`;
+	const html_content = html_header + html_body + html_script;
+	
+	console.log("Scorching Ray Macro|html_content", html_content);
+	
 	new Dialog({
 			title: "Scorching Ray Damage",
-			content: the_content,
+			content: html_content,
 			buttons: {
 				one: { label: "Damage", callback: async (html) => {
 					let spentTotal = 0;
@@ -162,8 +206,12 @@ if(in_range_targets.length === 1) {
 					
 							const get_target = canvas.tokens.get(selected_target.name);
 							for(let i = 0; i < damageNum; i++) {
-								get_target.setTarget(true, { releaseOthers : true });		
-								const roll_result = await updated_spell_to_cast.roll()
+                  const updated_spell_to_cast = spell_original.constructor.createOwned(upcastData, 
+																		actorD, {temporary: true});
+							
+							    const roll_result = new MidiQOL.TrapWorkflow(actorD, updated_spell_to_cast, [get_target]);
+// 								get_target.setTarget(true, { releaseOthers : true });		
+// 								const roll_result = await updated_spell_to_cast.roll()
 								console.log("Scorching Ray Macro|roll_result", roll_result);
 								await wait(WAIT_MS);
 							}					  
