@@ -13,6 +13,25 @@ async function wait(ms) {
   });
 }
 
+// roll combine function from Kekilla
+function combineRolls(arr) {
+    return arr.reduce((acc, val, ind) => {
+        if (ind === 0) {
+            return val;
+        } else {
+            let returnVal = new Roll(`${acc._formula} + ${val._formula}`);
+
+            returnVal.data = {};
+            returnVal.results = [...acc.results, `+`, ...val.results];
+            returnVal.terms = [...acc.terms, `+`, ...val.terms];
+            returnVal._rolled = true;
+            returnVal._total = acc._total + val._total;
+
+            return returnVal;
+        }
+    });
+}
+
 
 if(args.length < 1) {
   ui.notifications.error("Magic Missile Macro|Arguments not found.");
@@ -139,13 +158,18 @@ function recalculate() {
 						console.log("Magic Missile Macro|target_id", target_id);
 						
 						const get_target = canvas.tokens.get(target_id);
-						
+						let damageRolls = [];
 						for(let i = 0; i < damageNum; i++) {
-						  new MidiQOL.DamageOnlyWorkflow(actorD, tokenD, damageRoll.total, DAMAGE_TYPE, [get_target], damageRoll, {itemCardId: args[0].itemCardId});
+						  damageRolls.push(damageRoll);
+						
+						  //new MidiQOL.DamageOnlyWorkflow(actorD, tokenD, damageRoll.total, DAMAGE_TYPE, [get_target], damageRoll, {itemCardId: args[0].itemCardId});
 						  if(MM_ANIMATION) { await MM_ANIMATION.execute(token_id, target_id, COLOR); }
 						}
 						damage_target.push(`<div class="midi-qol-flex-container"><div>hits ${damageNum > 1 ? (" (x" + damageNum.toString() + ")") : "" }</div><div class="midi-qol-target-npc midi-qol-target-name" id="${get_target.id}"> ${get_target.name}</div><div><img src="${get_target.data.img}" width="30" height="30" style="border:0px"></div></div>`);
-
+						
+						let damageRollAll = damageRoll;
+						if(damageRolls.length > 1) { damageRollAll = combineRolls(damageRolls); }
+						new MidiQOL.DamageOnlyWorkflow(actorD, tokenD, damageRollAll.total, DAMAGE_TYPE, [get_target], damageRollAll, {itemCardId: args[0].itemCardId});
 					}  	
 					
 				}
