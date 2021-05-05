@@ -59,9 +59,20 @@ if(target_ids.length === 1) {
   console.log("Magic Missile Macro|Single target.");
   
   let the_target = canvas.tokens.get(target_ids[0].id);
-  const damageRoll = new Roll(`(1d4 +1)*${num_missiles}`).roll();
-  console.log(`Magic Missile Macro|damageRoll`, damageRoll);
-  new MidiQOL.DamageOnlyWorkflow(actorD, tokenD, damageRoll.total, DAMAGE_TYPE, [the_target], damageRoll, {itemCardId: item_card_id}); 
+  
+// avoid bug in how MidiQOL interprets damage multiplier. See https://gitlab.com/tposney/midi-qol/-/issues/347.
+//   const damageRoll = new Roll(`(1d4 +1)*${num_missiles}`).roll();
+//   console.log(`Magic Missile Macro|damageRoll`, damageRoll);
+//   new MidiQOL.DamageOnlyWorkflow(actorD, tokenD, damageRoll.total, DAMAGE_TYPE, [the_target], damageRoll, {itemCardId: item_card_id}); 
+
+  const damageRoll = new Roll(`1d4 + 1`).roll();
+  let damageRolls = [];
+	for(let i = 0; i < num_missiles; i++) {
+		damageRolls.push(damageRoll);
+	}
+	const damageRollAll = combineRolls(damageRolls);
+	new MidiQOL.DamageOnlyWorkflow(actorD, tokenD, damageRollAll.total, DAMAGE_TYPE, [the_target], damageRollAll, {itemCardId: item_card_id}); 
+
   const damage_target = `<div class="midi-qol-flex-container"><div>hits</div><div class="midi-qol-target-npc midi-qol-target-name" id="${the_target.id}"> ${the_target.name}</div><div><img src="${the_target.data.img}" width="30" height="30" style="border:0px"></div></div>`;
   await wait(1000);
 	const chatMessage = await game.messages.get(args[0].itemCardId);
