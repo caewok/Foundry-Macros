@@ -10,7 +10,7 @@
  */
 
 
-console.log("ActorItem Macro|args", args);
+//console.log("ActorItem Macro|args", args);
 
 const token_id = args[0];
 const item_name = args[1];
