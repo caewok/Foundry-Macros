@@ -101,7 +101,6 @@ Notes:
 - Use `{{...}}` to pass data; use `{{{...}}}` to pass unescaped data (for example, a string variable with html code).
 - Everything between the `<form>` tag is up to you.
 - See [Handlebars Guide](https://handlebarsjs.com/guide/#what-is-handlebars) for more advanced handlebars code.
-- If you want buttons like with Dialog, you will need to add them yourself.
 
 ## Javascript Options
 ### 1. Call `renderTemplate` and then do something with the resulting html
@@ -276,6 +275,7 @@ const res = await my_form.render(true);
 Note:
 - Make sure the initial tab name is the same as the label for the tab you want.
 - These options could be built into myFormApplication definition. 
+- If you want buttons like with Dialog, you will need to add them yourself.
 
 # Handlebars with Partials
 
