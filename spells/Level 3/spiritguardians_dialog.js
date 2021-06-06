@@ -137,7 +137,7 @@ const LOG_PREFIX = "SpiritGuardiansDialog|";
 // ---------------- Dialog content constants -------------- //
 const DIALOG_TEXT = {
   title: 'Spirit Guardians Unaffected Tokens',
-  intro: `Select zero or more of the following visible tokens to be unaffected by <em>spirit guardians</em>.
+  intro: `Select zero or more of the following visible tokens to be <b>unaffected</b> by <em>spirit guardians</em>.
 `,
   all: "All",
   pcs: "PCs",
@@ -146,8 +146,105 @@ const DIALOG_TEXT = {
   npc_race_groups: "NPC Races / Types"
 };
 
+// ---------------- EXTEND FORM APPLICATION CLASS -------- //
+class SelectItemDialog extends FormApplication {
+  constructor(object, options) {
+    super(object, options)
+        
+    loadTemplates([
+      'macro_data/selectItemsFormApplication.html',
+      'macro_data/listItemsFormApplication.html',
+      'macro_data/groupItemsFormApplication.html']);
+  }
+
+
+  static get defaultOptions() {
+    return mergeObject(super.defaultOptions, {
+      template: "macro_data/selectItemsFormApplication.html",
+      tabs: [{navSelector: ".tabs", contentSelector: ".content", initial: "tab1"}],
+      width: "500",
+      height: "auto",
+      resizable: true,
+    });
+  }
+  
+  getData() {
+    const data = super.getData();
+    log("getData", data);
+    return mergeObject(data.object, {
+      button: { icon: '<i class="fas fa-check"></i>',
+                label: game.i18n.localize("Okay"),
+                id: "button-okay" }
+    });
+  }
+  
+  activateListeners(html) {
+    super.activateListeners(html);
+    log("activateListeners", html);  
+          
+  }
+  
+  get title() {
+    return "Select Tokens";
+  }
+  
+  async _updateObject(event, formData) {
+    return;
+  }
+  
+  reloadTemplates() {
+    delete _templateCache['macro_data/selectItemsFormApplication.html'];
+    delete _templateCache['macro_data/listItemsFormApplication.html'];
+    delete _templateCache['macro_data/groupItemsFormApplication.html'];
+    
+    loadTemplates([
+      'macro_data/selectItemsFormApplication.html',
+      'macro_data/listItemsFormApplication.html',
+      'macro_data/groupItemsFormApplication.html']);
+  }
+  
+  _onClickButton(event) {
+    const id = event.currentTarget.dataset.button;
+    const button = this.data.buttons[id];
+    this.submit(button);
+  }
+}
+
+
 
 // ---------------- Build Dialog Data --------------------- //
+
+/*
+Data structure:
+{ header: "header html",
+  footer: "footer html",
+  tabs: {
+    groups: {
+      title: "tab title",
+      header: "header html",
+      footer: "footer html",
+      array_data: [ {id, label }, ...]
+    },
+    
+    list: {
+			title: "tab title"
+			header: "header html",
+			footer: "footer html",
+			search_text: "Search prompt string",
+			array_data: [ {id, img, color, group_labels: [] }, ...]
+    }
+  }
+}
+
+- tabs.list.array_data[].group_labels is an Array of strings.
+-   each should correspond to the groups.array_data[].label
+-   if the group is selected, the list data is searched in order 
+-   to check the corresponding checkbox in the item list
+*/
+
+
+
+
 // Retrieve visible tokens for the originating actor.
 const ORIGINATING_TOKEN = RetrieveSelectedTokens()[0]; // for testing
 if(!ORIGINATING_TOKEN) return ui.notifications.error(LOG_PREFIX + "Must select a token.");
@@ -175,373 +272,108 @@ const disabled_pc_races = (pc_races.length < 2) ? "disabled" : "";
 const disabled_npc_races = (npc_races.length < 2) ? "disabled" : "";
 const disabled_dispositions = (dispositions.length < 2) ? "disabled" : "";
 
+
+const grouping_idx = { pcs: 0, dispositions: 1, races: 2 }
+const groups_tab_data = [{ title: "Groups", 
+                           items: [] },
+          
+												 { title: "Dispositions",
+													 items: [] },
+             
+												 { title: "Races / Types",
+													 items: [] }];
+             
+groups_tab_data[grouping_idx.pcs].items.push({ id: "PCs", label: "PCs" });
+groups_tab_data[grouping_idx.pcs].items.push({ id: "NPCs", label: "NPCs" });
+
+if(dispositions.length > 1) {
+  dispositions.forEach(r => groups_tab_data[grouping_idx.dispositions].items.push({ id: cleanLabel(r), label: r }))
+}
+
+if(pc_races.length > 1) {
+  pc_races.forEach(r => groups_tab_data[grouping_idx.races].items.push({ id: cleanLabel(r), label: r }));
+}
+
+if(npc_races.length > 1) {
+  npc_races.forEach(r => groups_tab_data[grouping_idx.races].items.push({ id: cleanLabel(r), label: r }));
+}
+
+
+log("groups tab", groups_tab_data);
+
 // listing every actor
 const disposition_colors = { "-1": "red",
                              "0" : "black",
                              "1" : "green" };
 
-const token_list = visible_tokens.map(t => {
-  return {
-    id: t.data._id,
-    img: t.data.img,
-    name: t.data.name,
-    color: disposition_colors[t.data.disposition]
-  };
+visible_tokens.sort((a, b) => (a.name > b.name ? 1 : -1))
+
+const tokens_data = visible_tokens.map(t => {
+  const groups = [];
+  groups.push(t.actor.data.type === "character" ? "PCs" : "NPCs");
+  groups.concat(getDispositions([t]));
+  groups.concat(getRaceGroups([t]));
+
+  return {id: t.data._id,
+          label: t.data.name,
+          img: t.data.img,
+          properties: [],
+          groups: groups}
 });
 
-const _dialog_data = { 
-  pc_races: pc_races.map(r => {
-    return { id: cleanLabel(r), label: r };
-  }),
-  
-  npc_races: npc_races.map(r => {
-    return { id: cleanLabel(r), label: r };
-  }),
-  
-  dispositions: dispositions.map(r => {
-    return { id: cleanLabel(r), label: r }; 
-  }),
-  
-  // Alphabetical by token name
-  token_list: token_list.sort((a, b) => (a.name > b.name ? 1 : -1))
+
+
+// const token_rows = visible_tokens.map((t, r) => {
+//   const columns = [];
+//   columns.push(`<input type="checkbox" id="row${r}" class="GroupSelection"/>`);
+//   columns.push(`<img src="${t.data.img}" width="30" height="30" />`);
+//   columns.push(`<label for="row${r}">${t.data.name}</label>`);
+//   
+//   return(columns);
+// 
+//  //  return {
+// //     id: t.data._id,
+// //     img: t.data.img,
+// //     name: t.data.name,
+// //     //color: disposition_colors[t.data.disposition],
+// //     properties: [t.actor.data.type, "<em>" + t.actor.data.data.details.alignment + "</em>"]
+// //   };
+// });
+
+const template_data = {
+  header: DIALOG_TEXT.intro,
+  footer: "Test footer",
+  tabs: [
+    {
+      title: "Token Groups",
+      icon: "fas fa-dice-d20",
+      label: "tab-groups",
+      groups: groups_tab_data,
+      content: "Tab token groups content."
+    },
+    
+    {
+      title: "Token List",
+      icon: "fas fa-dice-d20",
+      label: "tab-list",
+      search: true,
+      search_text: "Search for one or more tokens by name...",
+      search_column: 2,
+      
+      // Alphabetical by token name
+      items: tokens_data
+    }
+  ]
 };
 
-log(_dialog_data);
+log("template_data object", template_data);
 
-// ---------------- Grouping Tab HTML --------------------- //
+const select_tokens_dialog = new SelectItemDialog(template_data, {});
+select_tokens_dialog.reloadTemplates();
 
-const _html_groupings_tab = `
-<form>
-  ${DIALOG_TEXT.intro}
-  <hr>
-  <div class="form group">
-    <input type="checkbox" id="PCs" class="GroupSelection"/>
-    <label for="PCs"> ${DIALOG_TEXT.pcs} </label>
-    <br>
-    <input type="checkbox" id="NPCs" class="GroupSelection"/>
-    <label for="NPCs"> ${DIALOG_TEXT.npcs} </label>
-    <br>
-  </div>
-  
-  <hr>
-  <div class="form group">
-    {{#each this.dispositions}}
-      <input type="checkbox" id={{this.id}} class="GroupSelection" ${disabled_dispositions}/>
-      <label for={this.id}> {{this.label}} </label>
-      <br>
-    {{/each}}
-  </div>
-  
+log("Rendering...");
 
-  
-  <br>
-  <h2>${DIALOG_TEXT.pc_race_groups}</h2>
-  <div class="form group">
-    {{#each this.pc_races}}
-      <input type="checkbox" id={{this.id}} class="GroupSelection" ${disabled_pc_races}/>
-      <label for={this.id}> {{this.label}} </label>
-      <br>
-    {{/each}}
-  </div>
-  
-  <br>
-  <h2>${DIALOG_TEXT.npc_race_groups}</h2>
-  <div class="form group">
-    {{#each this.npc_races}}
-      <input type="checkbox" id={{this.id}} class="GroupSelection" ${disabled_npc_races}/>
-      <label for={this.id}> {{this.label}} </label>
-      <br>
-    {{/each}}
-    <br>	   
-  </div>
-  <br>
-
-
-</form>
-`;
-
-// ---------------- Token List Tab HTML ------------------- //
-
-const _css = `
-<style type="text/css">
-  img { border-style: none; }
-</style>
-`;
-
-const _html_token_list_tab = `
-<form>
-  ${DIALOG_TEXT.intro}
-  <hr>
-  <input type="text" id="filter_field" onkeyup="filterFn()" placeholder="Search for tokens by name...">
-   <table id='list_table' class="table table-striped">
-			<tbody> 
-			  {{#each this.token_list}}
-			  <tr class="token-row">
-			      <td> <input type="checkbox" id={{this.id}} class="GroupSelection"/> </td>
-						<td> <label for={{this.id}} style="color:{{this.color}}"> {{this.name}} </label> </td>
-						<td> <img src={{this.img}} width="30" height="30" /> </td>
-			  </tr>  
-			  {{/each}}			  
-		 </tbody>
-	 </table>
-</form>
-`;
-
-const filterScript = 
-	`
-	<script>
-	function filterFn() {
-	  const input = document.getElementById("filter_field");
-		const filter = input.value.toUpperCase();
-		const table = document.getElementById("list_table");
-		let tr = table.getElementsByTagName("tr");
-
-		// Loop through all table rows, and hide those who don't match the search query
-		for (let i = 0; i < tr.length; i++) {
-			const td = tr[i].getElementsByTagName("td")[1]; // column to search
-			if (td) {
-				const txtValue = td.textContent || td.innerText;
-				if (txtValue.toUpperCase().indexOf(filter) > -1) {
-					tr[i].style.display = "";
-				} else {
-					tr[i].style.display = "none";
-				}
-			}
-		}	
-	}
-	</script>
-	`;
-
-
-// Below doesn't work b/c tab content not displayed
-// Even with adding to Dialog tabs: [{ navSelector: ".tabs", contentSelector: ".content", initial: "groupings" }]
-// Probably need to switch to FormApplication for this
-// const _html_raw = `
-// ${_css}
-// <!-- Tab links -->
-// <nav class="tabs" data-group="primary-tabs">
-//     <a class="item" data-tab="groupings"><i class="fas fa-dice-d20"></i> Token Groupings</a>
-//     <a class="item" data-tab="list"><i class="fas fa-cogs"></i> Token List</a>
-// </nav>
-// 
-// <section id="dialog-tabs" class="content">
-// <div class="tab" data-tab="groupings">
-// ${_html_groupings_tab}
-// </div>
-// 
-// <div class="tab" data-tab="list">
-// ${_html_token_list_tab}
-// </div>
-// </section>
-// 
-// ${filterScript}
-// `;
-
-// const _html_raw = `
-//  ${_css}
-//  ${_html_groupings_tab}
-//  <hr>
-//  ${_html_token_list_tab}
-//  ${filterScript}
-// `;
-
-// javascript tabs
-// https://www.w3schools.com/howto/howto_js_tabs.asp
-
-const tabScript = `
-function openTab(evt, tabName) {
-  // Declare all variables
-  let i, tabcontent, tablinks;
-
-  // Get all elements with class="tabcontent" and hide them
-  tabcontent = document.getElementsByClassName("tabcontent");
-  for (i = 0; i < tabcontent.length; i++) {
-    tabcontent[i].style.display = "none";
-  }
-
-  // Get all elements with class="tablinks" and remove the class "active"
-  tablinks = document.getElementsByClassName("tablinks");
-  for (i = 0; i < tablinks.length; i++) {
-    tablinks[i].className = tablinks[i].className.replace(" active", "");
-  }
-
-  // Show the current tab, and add an "active" class to the button that opened the tab
-  document.getElementById(tabName).style.display = "block";
-  evt.currentTarget.className += " active";
-} 
-
-`;
-
-const _html_raw = `
-${_css}
-<!-- Tab links -->
-<div class="tabs" data-group="primary-tabs">
-  <button class="tablinks" onclick="openTab(event, 'token_groupings_tab')"><i class="fas fa-user-friends"></i> Token Groupings</button>
-  <button class="tablinks" onclick="openTab(event, 'token_list_tab')"><i class="fas fa-list-ul"></i> Tokens List</button>>
-</div>
-
-<div id="token_groupings_tab" class="tabcontent">
-${_html_groupings_tab}
-</div>
-
-<div id="token_list_tab" class="tabcontent">
-${_html_token_list_tab}
-</div>
-
-${filterScript}
-${tabScript}
-`;
-
-log("raw html", _html_raw);
-
-const _html = Handlebars.compile(_html_raw);
-
-let d = new Dialog({
-    title: DIALOG_TEXT.title,
-    content: _html(_dialog_data),
-    buttons: {
-        toggle: {
-            icon: '<i class="fas fa-check"></i>',
-            label: "Okay",
-            callback: () => log("Okay")
-        },
-    },
-    default: "toggle",
-    close: html => {
-        log(html);
-    }
-}).render(true);
-
-
-
-
-
-
-
-
-// ---------------- HTML DIALOG BUILDER ------------------- //
-const confirmButton = 'Confirm';
-const cancelButton = 'Cancel';
-const titleLabel = 'Spirit Guardians Unaffected Tokens';
-
-const allLabel = "All";
-const PCsLabel = "PCs";
-const NPCsLabel = "Creatures / NPCs";
-
-// Language used in the dialog to select combatants
-const selectCombatantsHeaderLabel = "Select Unaffected Targets";
-const selectCombatantsParagraph = 
-`Select zero or more of the following visible tokens to be unaffected by <em>spirit guardians</em>.
-`;
-
-
-// html for intro
-const combatant_selection_intro = 
-`
-<p>
-  <h3> ${selectCombatantsHeaderLabel}</h3>
-  ${selectCombatantsParagraph}
-  <br>
-</p>
-`;
-
-// html for the select all toggle
-const combatant_selection_all = 
-`
-<input type="checkbox" id="All" class="AllSelection"/>
-<label for="All"><strong> ${allLabel} </strong></label>  
-  
-&nbsp &nbsp <input type="reset" id="resetButton" class="resetButton">
-`;
-
-
-// All PCs toggle
-const combatant_selection_pcs_header = 
-`
-<input type="checkbox" id="PCs" class="GroupSelection"/>
-<label for="PCs"><strong> ${PCsLabel} </strong></label>
-<hr width=100 align="left">
-`;
-
-// All NPCs toggle
-const combatant_selection_npcs_header = 
-`
-<input type="checkbox" id="Creatures" class="GroupSelection"/>
-<label for="Creatures"><strong> ${NPCsLabel} </strong></label>
-<hr width=100 align="left">
-`;
-
-/**
- * Create html block for selecting a specific race group
- * @label Group label (e.g. undead, variant human, skeleton)
- */
-function constructGroupingSelection(group_label, type = "Race") {
-  type = type.split(" ").join("");
-  const label_clean = group_label.split(" ").join("");
-
-  const html = 
-  `
-  <input type="checkbox" id="${type}${label_clean}" class="${type}Selection"/>
-  <label for="${type}${label_clean}">${group_label}</label>
-  `;
-  
-  return html;
-}
-
-
-/**
- * Create html necessary to display PCs and NPCs by groups.
- * Skip displaying groups if none are available.
- */
-function constructSelectionHTML(tokens) {
-  const PCs = tokens.filter(t => t.players.length > 0);
-  const NPCs = tokens.filter(t => t.players.length === 0);
-  
-  
-  let pc_group_names = [];
-  let npc_group_names = [];
-  if(PCs.length > 2) {
-    pc_group_names = [...new Set(tokens.map(t => t.actor.data.data.details.race || t.actor.data.data.details.type))];
-  
-		// Don't bother if all a single group
-		if(pc_group_names.length < 2) pc_group_names = [];
-  }
-  
-  if(NPCs.length > 2) {
-    npc_group_names = [...new Set(tokens.map(t => t.actor.data.data.details.race || t.actor.data.data.details.type))];
-  
-		// Don't bother if all a single group
-		if(npc_group_names.length < 2) npc_group_names = [];
-  }
-  
-  const script_html = constructSelectionScript(PCs, NPCs, pc_group_names, npc_group_names);
-  
-  if(pc_group_names.length > 1) {
-    
-  
-  }
-  
-  
-  
-  
-
-  // main html
-  const html =
-  `
-  <body>
-    ${combatant_selection_intro}
-    <form>
-      ${combatant_selection_all}
-      ${combatant_selection_pcs_header}
-      <br>
-      ${}
-      
-    </form>
-  </body>
-  `
-  
-}
-
+const res = await select_tokens_dialog.render(true);
 
 
 
