@@ -146,101 +146,58 @@ const DIALOG_TEXT = {
   npc_race_groups: "NPC Races / Types"
 };
 
-// ---------------- EXTEND FORM APPLICATION CLASS -------- //
-class SelectItemDialog extends FormApplication {
-  constructor(object, options) {
-    super(object, options)
-        
-    loadTemplates([
-      'macro_data/selectItemsFormApplication.html',
-      'macro_data/listItemsFormApplication.html',
-      'macro_data/groupItemsFormApplication.html']);
+// ---------------- EXTEND TABBED DIALOG CLASS -------- //
+class TabbedDialog extends Dialog {
+  constructor(data, options) {  
+    // setting up tabs here instead of in defaultOptions so that we can easily set the initial tab
+    options.tabs = [{navSelector: ".tabs", contentSelector: ".tab-content", initial: options.initial_tab || "tab1"}];
+    super(data, options)
   }
-
 
   static get defaultOptions() {
     return mergeObject(super.defaultOptions, {
-      template: "macro_data/selectItemsFormApplication.html",
-      tabs: [{navSelector: ".tabs", contentSelector: ".content", initial: "tab1"}],
-      width: "500",
-      height: "auto",
-      resizable: true,
+      template: "macro_data/tabbedDialogTemplate.html",
     });
   }
   
   getData() {
+    console.log("getData", this);
+    // no super to Application
     const data = super.getData();
-    log("getData", data);
-    return mergeObject(data.object, {
-      button: { icon: '<i class="fas fa-check"></i>',
-                label: game.i18n.localize("Okay"),
-                id: "button-okay" }
+
+    data.tabs = this.data.tabs.map((t, idx) => {
+      return {
+        id: t.id || `tab${idx + 1}`,
+        title: t.title || `Tab ${idx + 1}`,
+        icon: t.icon || "fas fa-dice-d20",
+        content: t.content || ""
+      }
     });
+    
+    data.header = this.data.header;
+    data.footer = this.data.footer;
+    
+    console.log(data);
+    
+    return data;
   }
-  
+    
   activateListeners(html) {
     super.activateListeners(html);
-    log("activateListeners", html);  
-          
-  }
-  
-  get title() {
-    return "Select Tokens";
-  }
-  
-  async _updateObject(event, formData) {
-    return;
-  }
-  
-  reloadTemplates() {
-    delete _templateCache['macro_data/selectItemsFormApplication.html'];
-    delete _templateCache['macro_data/listItemsFormApplication.html'];
-    delete _templateCache['macro_data/groupItemsFormApplication.html'];
-    
-    loadTemplates([
-      'macro_data/selectItemsFormApplication.html',
-      'macro_data/listItemsFormApplication.html',
-      'macro_data/groupItemsFormApplication.html']);
-  }
-  
-  _onClickButton(event) {
-    const id = event.currentTarget.dataset.button;
-    const button = this.data.buttons[id];
-    this.submit(button);
-  }
+    Application.prototype.activateListeners.call(this, html);  
+  }      
 }
 
-
-
-// ---------------- Build Dialog Data --------------------- //
 
 /*
-Data structure:
-{ header: "header html",
-  footer: "footer html",
-  tabs: {
-    groups: {
-      title: "tab title",
-      header: "header html",
-      footer: "footer html",
-      array_data: [ {id, label }, ...]
-    },
-    
-    list: {
-			title: "tab title"
-			header: "header html",
-			footer: "footer html",
-			search_text: "Search prompt string",
-			array_data: [ {id, img, color, group_labels: [] }, ...]
-    }
-  }
-}
+ * Creates a two-tab interface for selecting items.
+ * Tab1: items by groups. For example, PCs, NPCs, Hostiles, Race
+ * Tab2: list of items with search box
+ * 
+ * Items in the list will be selected if the corresponding group is selected.
+ * List of checked items will be returned upon dialog close.
+ */
 
-- tabs.list.array_data[].group_labels is an Array of strings.
--   each should correspond to the groups.array_data[].label
--   if the group is selected, the list data is searched in order 
--   to check the corresponding checkbox in the item list
-*/
 
 
 
