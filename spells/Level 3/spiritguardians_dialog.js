@@ -128,6 +128,14 @@ function getDispositions(tokens_arr) {
   return dispositions;
 }
 
+function getDisposition(t) {
+  const inverted_disposition_names = invertObject(CONST.TOKEN_DISPOSITIONS)
+  return game.i18n.localize(`TOKEN.${inverted_disposition_names[t.data.disposition.toString()]}`);
+}
+
+function getRaceGroup(t) {
+  return t.actor.data.data.details.race || t.actor.data.data.details.type || "undefined";
+}
 
 
 
@@ -183,6 +191,7 @@ class TabbedDialog extends Dialog {
   }
     
   activateListeners(html) {
+    FormApplication.prototype.
     super.activateListeners(html);
     Application.prototype.activateListeners.call(this, html);  
   }      
@@ -198,6 +207,11 @@ class TabbedDialog extends Dialog {
  * List of checked items will be returned upon dialog close.
  */
 
+- tabs.list.array_data[].group_labels is an Array of strings.
+-   each should correspond to the groups.array_data[].label
+-   if the group is selected, the list data is searched in order 
+-   to check the corresponding checkbox in the item list
+*/
 
 
 
@@ -210,92 +224,22 @@ const visible_tokens = RetrieveVisibleTokensForToken(ORIGINATING_TOKEN);
 log(visible_tokens);
 
 // Set up data required for the dialog
-const PCs = visible_tokens.filter(t => t.actor.data.type === "character");
-const NPCs = visible_tokens.filter(t => t.actor.data.type === "npc");
-
-log("PCs", PCs);
-log("NPCs", NPCs);
-
-let pc_races = getRaceGroups(PCs);
-let npc_races = getRaceGroups(NPCs);
-log("pc_races", pc_races);
-log("npc_races", npc_races);
-
-const dispositions = getDispositions(visible_tokens);
-log("dispositions", dispositions);
-
-// ignore if less than 2 separate labels
-const disabled_pc_races = (pc_races.length < 2) ? "disabled" : "";
-const disabled_npc_races = (npc_races.length < 2) ? "disabled" : "";
-const disabled_dispositions = (dispositions.length < 2) ? "disabled" : "";
-
-
-const grouping_idx = { pcs: 0, dispositions: 1, races: 2 }
-const groups_tab_data = [{ title: "Groups", 
-                           items: [] },
-          
-												 { title: "Dispositions",
-													 items: [] },
-             
-												 { title: "Races / Types",
-													 items: [] }];
-             
-groups_tab_data[grouping_idx.pcs].items.push({ id: "PCs", label: "PCs" });
-groups_tab_data[grouping_idx.pcs].items.push({ id: "NPCs", label: "NPCs" });
-
-if(dispositions.length > 1) {
-  dispositions.forEach(r => groups_tab_data[grouping_idx.dispositions].items.push({ id: cleanLabel(r), label: r }))
-}
-
-if(pc_races.length > 1) {
-  pc_races.forEach(r => groups_tab_data[grouping_idx.races].items.push({ id: cleanLabel(r), label: r }));
-}
-
-if(npc_races.length > 1) {
-  npc_races.forEach(r => groups_tab_data[grouping_idx.races].items.push({ id: cleanLabel(r), label: r }));
-}
-
-
-log("groups tab", groups_tab_data);
-
-// listing every actor
-const disposition_colors = { "-1": "red",
-                             "0" : "black",
-                             "1" : "green" };
-
 visible_tokens.sort((a, b) => (a.name > b.name ? 1 : -1))
 
+// Map tokens to the data need for the dialog
 const tokens_data = visible_tokens.map(t => {
   const groups = [];
   groups.push(t.actor.data.type === "character" ? "PCs" : "NPCs");
-  groups.concat(getDispositions([t]));
-  groups.concat(getRaceGroups([t]));
+  groups.push(getDisposition(t));
+  groups.push(getRaceGroup(t));
 
   return {id: t.data._id,
           label: t.data.name,
           img: t.data.img,
-          properties: [],
           groups: groups}
 });
 
 
-
-// const token_rows = visible_tokens.map((t, r) => {
-//   const columns = [];
-//   columns.push(`<input type="checkbox" id="row${r}" class="GroupSelection"/>`);
-//   columns.push(`<img src="${t.data.img}" width="30" height="30" />`);
-//   columns.push(`<label for="row${r}">${t.data.name}</label>`);
-//   
-//   return(columns);
-// 
-//  //  return {
-// //     id: t.data._id,
-// //     img: t.data.img,
-// //     name: t.data.name,
-// //     //color: disposition_colors[t.data.disposition],
-// //     properties: [t.actor.data.type, "<em>" + t.actor.data.data.details.alignment + "</em>"]
-// //   };
-// });
 
 const template_data = {
   header: DIALOG_TEXT.intro,
@@ -332,6 +276,19 @@ log("Rendering...");
 
 const res = await select_tokens_dialog.render(true);
 
+/* Dialog template
+<div class="dialog-content">
+    {{{content}}}
+</div>
+<div class="dialog-buttons">
+    {{#each buttons as |button id|}}
+    <button class="dialog-button {{cssClass}}" data-button="{{id}}">
+        {{{button.icon}}}
+        {{{button.label}}}
+    </button>
+    {{/each}}
+</div>
 
+*/
 
 
