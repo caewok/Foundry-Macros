@@ -306,8 +306,10 @@ async function award_xp(totalAmount, amountArray) {
   //console.log("Amount.Length: " + amountArray.length);
   //console.log("Amount (0): " + amountArray[0].value);
   
+  const scene_name = isEmpty(canvas.scene.data.navName) ? canvas.scene.data.name : canvas.scene.data.navName; 
+  
   let chatContent = `
-      <em>${canvas.scene.data.navName}</em><br>
+      <em>${scene_name}</em><br>
 			<b>${totalAmount} Experience Awarded!</b>
 			`;
   
@@ -327,7 +329,7 @@ async function award_xp(totalAmount, amountArray) {
     const current_notes = actor.data.data.details.hasOwnProperty("notes") ? actor.data.data.details.notes.value : "";
     
     const updated_notes = current_notes + `
-      <p><em>${canvas.scene.data.navName}</em> ${awardAmount} XP earned.</p>
+      <p><em>${scene_name}</em> ${awardAmount} XP earned.</p>
     `
     await actor.update({
       "data.details.notes": {value: updated_notes}
