@@ -312,33 +312,37 @@ async function award_xp(totalAmount, amountArray) {
       <em>${scene_name}</em><br>
 			<b>${totalAmount} Experience Awarded!</b>
 			`;
+			
+			
   
-  actors.forEach(actor => {
-    var index = actors.indexOf(actor);
-    var awardAmount = parseInt( amountArray[index].value );
-    console.log("Awarding " + awardAmount + " to " + actor.name);
-    chatContent += `<br>${awardAmount} added to ${actor.name}.`;
+  actors.forEach(async (actor) => {
     
-    if(UPDATE_ACTOR_XP) {
-    await actor.update({
-       "data.details.xp.value": actor.data.data.details.xp.value + awardAmount
-        });
-    }
+  
+      var index = actors.indexOf(actor);
+      var awardAmount = parseInt( amountArray[index].value );
+      console.log("Awarding " + awardAmount + " to " + actor.name);
+      chatContent += `<br>${awardAmount} added to ${actor.name}.`;
+    
+      if(UPDATE_ACTOR_XP) {
+      await actor.update({
+         "data.details.xp.value": actor.data.data.details.xp.value + awardAmount
+          });
+      }
         
-    if(UPDATE_JOURNAL) {
-    const current_notes = actor.data.data.details.hasOwnProperty("notes") ? actor.data.data.details.notes.value : "";
+      if(UPDATE_JOURNAL) {
+      const current_notes = actor.data.data.details.hasOwnProperty("notes") ? actor.data.data.details.notes.value : "";
     
-    const updated_notes = current_notes + `
-      <p><em>${scene_name}</em> ${awardAmount} XP earned.</p>
-    `
-    await actor.update({
-      "data.details.notes": {value: updated_notes}
+      const updated_notes = current_notes + `
+        <p><em>${scene_name}</em> ${awardAmount} XP earned.</p>
+      `
+      await actor.update({
+        "data.details.notes": {value: updated_notes}
     
-    });
+      });
     
-    }
-        
-  })
+      }
+   
+  });
   
   let chatData = {
         user: game.user._id,
