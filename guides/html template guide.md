@@ -84,7 +84,7 @@ class SelectItemDialog extends FormApplication {
 }
 ```
 
-# Basic Version 
+# Example: Basic Template 
 
 Remember, save the following in the foundry Data folder. For this example, I am saving mine at `macro_data/TEMPLATE_FILE`, where `TEMPLATE_FILE` is something like `basic_template.html`.
 
@@ -164,7 +164,7 @@ const my_form = new myFormApplication(template_data, { template: template_file }
 const res = await my_form.render(true);
 ```
 
-If you want to resize the dialog box, you can either hard-code options into your class or pass options dynamically. For example:
+If you want to resize the dialog box, you can either hard-code options into your class or pass options dynamically. For example, to have resizable width, replace the my_form definition in the above with the following:
 ```js
 const my_form = new myFormApplication(template_data, { template: template_file,
                                                         width: "400",

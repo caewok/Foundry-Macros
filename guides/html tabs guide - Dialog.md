@@ -1,10 +1,10 @@
 ![](https://img.shields.io/badge/Foundry-v0.8.7-informational)
 
-# Using HTML Tabbed Templates in FoundryVTT (extend Dialog Class)
+# Extend Dialog Class to utilize tabs 
 
-This guide provides some examples of using html templates, tabs, and handlebars in Foundry VTT dialogs or sheets. It assumes basic knowledge about templates. (See the html template guide for basics.) In this guide, we will extend the Dialog class for a basic tabbed version.
+This guide provides some examples of using html templates, tabs, and handlebars in Foundry VTT dialogs or sheets. In this guide, we will extend the Dialog class for a basic tabbed version.
 
-You might want to check out the html template guide or the html tabs guide - FormApplication.
+If you have not yet, you might want to check out the html template guide or the html tabs guide - FormApplication.
 
 # Dialog Basics
 
@@ -112,7 +112,7 @@ A lot of the rest of the magic of Dialog is just making the user define the butt
 The Dialog class, as seen in the above example, also takes a bunch of functions (callbacks) that tell it what to do once either button is pushed, or if the user simply closes the dialog using the `X` button in the window. 
 
 
-# Tabbed Dialog
+# Example: Tabbed Dialog Class
 
 We are going to extend the Dialog class to allow for some basic tabs, following a similar structure to how the Dialog class lets the user define buttons. We assume that the user may want a fixed header across all tabs, and a fixed footer that includes any buttons defined by the user. The number of tabs will be defined by the user. 
 
@@ -205,15 +205,18 @@ class TabbedDialog extends Dialog {
     
     return data;
   }
-    
+  
+  // In Foundry 0.7.9 we would have needed to call Application.prototype.activateListeners directly. Can remove for 0.8.7.
+  /* 
   activateListeners(html) {
     super.activateListeners(html);
     Application.prototype.activateListeners.call(this, html);  
-  }      
+  } 
+  */     
 }
 ```
 
-What are we doing with activateListeners? `Dialog` class alone does not work with tabs. This appears to be because it does not call `super.activateListeners` and so the tab switching does not work. Passing `{ tabs: [{ navSelector: ".tabs", contentSelector: ".content", initial: "tab1" }]}` as an option to Dialog does not work. So we are calling the Application activateListeners here as a work-around. 
+For Foundry 0.7.9, what were we doing with activateListeners? `Dialog` class alone did not work with tabs, because tab switching did not work. So we called the Application activateListeners here as a work-around. We can ignore for Foundry 0.8.7, which switches tabs as expected without overriding `activateListeners`.
 
 ### Example: Three tabs, no content
 
@@ -221,35 +224,36 @@ Below is an example of a basic tabbed dialog, in which we ask for three tabs but
 
 ```js
 let d = new TabbedDialog(
- {
-   title: "Test Tabbed Dialog",
-   header: "Test <em>header</em>",
-   footer: "Test <i>footer</i>",
-   tabs: [ {  },
-           {  },
-           {  }
-         ],
-   buttons: {
-    one: {
-     icon: '<i class="fas fa-check"></i>',
-     label: "Option One",
-     callback: () => console.log("Chose One")
-    },
-    two: {
-     icon: '<i class="fas fa-times"></i>',
-     label: "Option Two",
-     callback: () => console.log("Chose Two"//    }
-  },
-  default: "two",
-  render: html => console.log("Register interactivity in the rendered dialog"),
-  close: html => console.log("This always is logged no matter which option is chosen")
- 
+{
+  title: "Test Tabbed Dialog",
+  header: "Test <em>header</em>",
+  footer: "Test <i>footer</i>",
+  tabs: [ { },
+          { },
+          { }
+        ],
+  buttons: {
+   one: {
+    icon: '<i class="fas fa-check"></i>',
+    label: "Option One",
+    callback: () => console.log("Chose One")
+   },
+   two: {
+    icon: '<i class="fas fa-times"></i>',
+    label: "Option Two",
+    callback: () => console.log("Chose Two")
+   }
  },
- { resizable: true }
- 
- );
- 
- d.render(true);
+ default: "two",
+ render: html => console.log("Register interactivity in the rendered dialog"),
+ close: html => console.log("This always is logged no matter which option is chosen")
+
+},
+{ resizable: true }
+
+);
+
+d.render(true);
 ```
 
 ### Example: Three tabs, varied options

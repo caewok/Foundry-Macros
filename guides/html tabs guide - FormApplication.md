@@ -1,10 +1,12 @@
 ![](https://img.shields.io/badge/Foundry-v0.8.7-informational)
 
-# Using HTML Tabbed Templates in FoundryVTT (extend FormApplication Class)
+# Extend FormApplication Class using HTML Tabbed Templates in FoundryVTT
 
-This guide provides some examples of using html templates, tabs, and handlebars in Foundry VTT dialogs or sheets. It assumes basic knowledge about templates. (See the html template guide for basics.) In this guide, we will extend the FormApplication class for a basic tabbed version.
+This guide provides some examples of using html templates, tabs, and handlebars in Foundry VTT dialogs or sheets. In this guide, we will extend the FormApplication class for a basic tabbed version.
 
-# All the tabs
+See html template guide for a basic overview of templates in Foundry.
+
+# Example: All the tabs
 The following code creates a tabbed display. Using handlebars, we are able to dynamically set the number of tabs by passing an array of tab properties, one for each tab. 
 
 ## HTML
@@ -37,9 +39,11 @@ Fixed <em>footer</em><br>
 </form>
 ```
 ## Javascript
-Run this from a macro or in module code. 
+Run this from a macro or in module code. Two options are provided below: 
+1. Use renderTemplate.
+2. Subclass FormApplication. 
 
-### 1. Call `renderTemplate` and then do something with the resulting html
+### 1. Call `renderTemplate` and then do something with the resulting html. The example here uses a Dialog but you have many options:
 ```js
 const template_file = "macro_data/TEMPLATE_FILE";
 const template_data = { header: "Handlebars header text.",
@@ -52,7 +56,9 @@ const template_data = { header: "Handlebars header text.",
                                  content: "<em>Fancy tab2 content.</em>"}],
                         footer: "Handlebars footer text."};
 const rendered_html = await renderTemplate(template_file, template_data);
-/* Below doesn't work
+console.log(rendered_html); 
+
+// Works as of Foundry 0.8.7; did not work in Foundry 0.7.9
 let d = new Dialog({
     title: "MyDialogTitle",
     content: rendered_html,
@@ -69,10 +75,10 @@ let d = new Dialog({
     },
   }, { tabs: [{ navSelector: ".tabs", contentSelector: ".content", initial: "tab1" }]} );
 d.render(true);
-*/
 ```
 Notes:
-- `Dialog` class will not work with tabs. This appears to be because it is not calling `super.activateListeners` and so the tab switching does not work. Passing `{ tabs: [{ navSelector: ".tabs", contentSelector: ".content", initial: "tab1" }]}` as an option does not work. See html tabs guide - Dialog for an example of extending the Dialog class.
+- Passing `{ tabs: [{ navSelector: ".tabs", contentSelector: ".content", initial: "tab1" }]}` is (basically) telling the Application class how to track when you select different tabs.
+- See html tabs guide - Dialog for an example of extending the Dialog class.
 
 
 ### 2. Subclass `FormApplication`.
@@ -118,7 +124,7 @@ Note:
 - These options could be built into myFormApplication definition. 
 - If you want buttons like with Dialog, you will need to add them yourself.
 
-# Handlebars with Partials
+# Example: Handlebars with Partials
 
 Instead of dynamically creating tab content, another option is to load one or more handlebars partials files for the tab content. For this example, we will use a single partial file but provide it dynamic content. Name the partial file whatever you want; here I use `tab_partial.html`.``
 
@@ -151,7 +157,7 @@ Fixed <em>footer</em><br>
 </form>
 
 ```
-Partial:
+Note that we are providing the `tab_partial.html` file location above. Here is the html for that `tab_partial.html` file:
 ```html
 Fixed tab content.<br>
 This is tab {{title}}.<br>
@@ -200,9 +206,10 @@ const res = await my_form.render(true);
 
 Notes:
 - You must load the partial template either in your main code or when instantiating the class. 
+- The `<form>` tag is important. 
 
-# Search
-This is an example of a tab that relies on `<script>` tag. Here, we define a function to filter through a table by a specific column in that table. (Useful for lists of items, tokens, etc.) We will use partials and create a special partial for the search table, named `tab_search_partial.html`. 
+# Example: Search Tab
+This is an example of a tab that relies on a `<script>` tag. Here, we define a function to filter through a table by a specific column in that table. (Useful for lists of items, tokens, etc.) We will use partials and create a special partial for the search table, named `tab_search_partial.html`. 
 
 The following is overkill, in that it dynamically chooses the search tag with handlebars (this allows us to see how such if/then switches might work). The simpler version would just define the tabs in advance with no dynamic switching. 
 
