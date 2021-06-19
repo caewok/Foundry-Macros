@@ -1,0 +1,33 @@
+<table>
+  <thead>
+    <tr>
+      <th style="text-align:left">Attribute</th>
+      <th style="text-align:center;">Score</th>
+      <th style="text-align:center;">Modifier</th>
+      <th style="text-align:center;">Points</th>
+    </tr>
+  </thead>
+
+  <tbody>
+  {{#each attributes}}
+    <tr>
+      <td style="text-align:left;">{{label}}</td>
+      <td style="text-align:center;"><input type="number" step="1" min="{{min}}" max="{{max}}" id="{{id}}" class="attributes" value="{{value}}"><>
+      <td style="text-align:center;" id="{{id}}-modifier" class="attributes">{{modifier}}</td>
+      <td style="text-align:center;" id="{{id}}-cost" class="attributes">{{cost}}</td>
+   </tr>
+
+  {{/each}}
+  <!--- total for points costs --->
+  <tr style="border-top:double">
+    <td colspan="3" style="text-align:right;"><b>Total</b></td>
+    <td style="text-align:center;" class="attributes"><b id="attr-current-points" class="attributes">{{costs_total}}</b>/<b id="attr-max-points" >
+  </tr>
+  </tbody>
+
+</table>
+<!--- Space to line up the two tab contents --->
+<br>
+<br>
+<br>
+<br>

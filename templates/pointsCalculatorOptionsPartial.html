@@ -1,0 +1,29 @@
+<hr>
+<table>
+  <tbody>
+    <tr><td>Total Points:</td>
+        <td><input type="number" step="1" id="max-points" class="options" value={{max_points}}></td>
+    </tr>
+    <tr><td>Maximum Ability Score<br>(before racial adjustments):</td>
+        <td><input type="number" step="1" id="max-ability" class="options"value={{max_attr}}></td>
+    </tr>
+    <tr><td>Minimum Ability Score<br>(before racial adjustments):</td>
+        <td><input type="number" step="1" id="min-ability" class="options" value={{min_attr}}></td>
+    </tr>
+  </tbody>
+</table>
+
+<!--- Layout a grid with X number of columns as indicated by new_row and end_row --->
+<table>
+  <tbody>
+    {{#each costs}}
+      {{#if new_row}}
+      <tr>
+      {{/if}}
+      <td>{{label}}:<input type="number" step="1" id="point-{{id}}" class="points-options" value={{value}}></td>
+      {{#if end_row}}
+      </tr>
+      {{/if}}
+    {{/each}}
+  <tbody>
+</table>
