@@ -1,7 +1,9 @@
+// Updated for Foundry 0.8.8 
 // https://gitlab.com/crymic/foundry-vtt-macros/-/blob/master/5e/Spells/Level%201/Magic%20Missile.js
 // Item macro, Midi-qol On Use. This handles damage, so remove it from the spell card.
 
 const DAMAGE_TYPE = "force";
+const PAUSE_AFTER_DIE_ROLL = 500;
 
 // macro that takes caster_id, target_id, and optionally a color.
 const MM_ANIMATION = game.macros.getName("JB2A RandomMagicMissile");
@@ -22,9 +24,9 @@ function combineRolls(arr) {
             let returnVal = new Roll(`${acc._formula} + ${val._formula}`);
 
             returnVal.data = {};
-            returnVal.results = [...acc.results, `+`, ...val.results];
+//             returnVal.result = [...acc.result, `+`, ...val.results];
             returnVal.terms = [...acc.terms, `+`, ...val.terms];
-            returnVal._rolled = true;
+            returnVal._evaluated = true;
             returnVal._total = acc._total + val._total;
 
             return returnVal;
@@ -42,9 +44,9 @@ console.log("Magic Missile Macro|args", args);
 
 
 const num_missiles = 2 + Number(args[0].spellLevel);
-const actor_id = args[0].actor._id;
+const actor_id = args[0].actor.id;
 const token_id = args[0].tokenId;
-const target_ids = args[0].targets.map(t => { return { id: t._id, name: t.name }; });
+const target_ids = args[0].targets.map(t => { return { id: t.id, name: t.name }; });
 const item_card_id = args[0].itemCardId;
 
 const actorD = game.actors.get(actor_id);
@@ -52,7 +54,7 @@ const tokenD = canvas.tokens.get(token_id);
 
 console.log("Magic Missile Macro|actorD", actorD);
 console.log("Magic Missile Macro|tokenD", tokenD);
-
+	
 //(async()=>{
 
 if(target_ids.length === 1) {
@@ -65,11 +67,16 @@ if(target_ids.length === 1) {
 //   console.log(`Magic Missile Macro|damageRoll`, damageRoll);
 //   new MidiQOL.DamageOnlyWorkflow(actorD, tokenD, damageRoll.total, DAMAGE_TYPE, [the_target], damageRoll, {itemCardId: item_card_id}); 
 
-  const damageRoll = new Roll(`1d4 + 1`).roll();
+  const damageRoll = await (new Roll(`1d4 + 1`)).roll({async: true});
+  game.dice3d?.showForRoll(damageRoll);
+  await wait(PAUSE_AFTER_DIE_ROLL);
+  
   let damageRolls = [];
 	for(let i = 0; i < num_missiles; i++) {
 		damageRolls.push(damageRoll);
 	}
+	console.log(`Magic Missile Macro|damage rolls`, damageRolls);
+	
 	const damageRollAll = combineRolls(damageRolls);
 	new MidiQOL.DamageOnlyWorkflow(actorD, tokenD, damageRollAll.total, DAMAGE_TYPE, [the_target], damageRollAll, {itemCardId: item_card_id}); 
 
@@ -87,6 +94,7 @@ if(target_ids.length === 1) {
 	
 	if(MM_ANIMATION) {
 	  for(let i = 0; i < num_missiles; i++) {
+	    //await wait(Math.floor(Math.random() * 500)) + 100; // wait a bit to offset the missiles
 	    await MM_ANIMATION.execute(token_id, target_ids[0].id, COLOR);
 	  }
 	}
@@ -156,7 +164,8 @@ function recalculate() {
 				let damage_target = [];
 				const damageRoll = new Roll(`1d4 +1`).roll();
 				console.log(`Magic Missile Macro|damageRoll`, damageRoll);
-				//game.dice3d?.showForRoll(damageRoll);
+				game.dice3d?.showForRoll(damageRoll);
+				await wait(PAUSE_AFTER_DIE_ROLL);
 				
 				// cycle through each target
 				// for each, run the damage only workflow for each animation, applying the same damage each time
@@ -174,7 +183,10 @@ function recalculate() {
 						  damageRolls.push(damageRoll);
 						
 						  //new MidiQOL.DamageOnlyWorkflow(actorD, tokenD, damageRoll.total, DAMAGE_TYPE, [get_target], damageRoll, {itemCardId: args[0].itemCardId});
-						  if(MM_ANIMATION) { await MM_ANIMATION.execute(token_id, target_id, COLOR); }
+						  if(MM_ANIMATION) { 
+						    //await wait(Math.floor(Math.random() * 500) + 100); // wait a bit to offset the missiles
+						    await MM_ANIMATION.execute(token_id, target_id, COLOR); 
+						   }
 						}
 						damage_target.push(`<div class="midi-qol-flex-container"><div>hits ${damageNum > 1 ? (" (x" + damageNum.toString() + ")") : "" }</div><div class="midi-qol-target-npc midi-qol-target-name" id="${get_target.id}"> ${get_target.name}</div><div><img src="${get_target.data.img}" width="30" height="30" style="border:0px"></div></div>`);
 						
