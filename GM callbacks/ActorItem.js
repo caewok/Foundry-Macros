@@ -52,11 +52,8 @@ if(action_to_take === "modify") {
   }
   
   const updated_data = mergeObject(args[3], { _id: item_id }, { insertKeys: true, overwrite: true, inplace: false });
-  console.log(`ActorItem Macro|updated_data`, updated_data);
-  
-  
-  //target.updateEmbeddedEntity("OwnedItem", copy_item);
-  await target.updateEmbeddedEntity("OwnedItem", updated_data);
+  console.log(`ActorItem Macro|updated_data`, updated_data);  
+  await target.updateEmbeddedDocuments("Item", [updated_data]);
 }
 
 
@@ -69,5 +66,5 @@ if(action_to_take === "create") {
     return;
   }
 
-  await target.createOwnedItem(item_to_add.data);
+  await target.createEmbeddedDocuments("Item", [item_to_add.data]);
 }
