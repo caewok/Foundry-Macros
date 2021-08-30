@@ -150,9 +150,9 @@ const selectCombatantsParagraph =
 
 // Language used in the dialog to select actions
 const selectActionsParagraph = "Please select one or more actions for:";
-const selectActionsBonusParagraph = "Initiative bonus/penalty steps largest die down/up, respectively.";
-const selectActionsAdvDisParagraph = "Advantage/disadvantage causes the largest die to be rolled with disadvantage/advantage, respectively.";
-const selectActionsMultipleParagraph = 
+//const selectActionsBonusParagraph = "Initiative bonus/penalty steps largest die down/up, respectively.";
+//const selectActionsAdvDisParagraph = "Advantage/disadvantage causes the largest die to be rolled with disadvantage/advantage, respectively.";
+/*const selectActionsMultipleParagraph = 
 `
 <em>
 <b>Multiple Actions.</b> 
@@ -160,7 +160,7 @@ If an effect grants you	an additional action without the use of a bonus action,
 you roll an initiative	die	for	only one of	your actions. 
 Use the largest die that corresponds to any one of the actions you plan to take.
 </em>  
-`;
+`;*/
 
 // Text in the action selection table and subsequent chat message.
 const PHRASES = {
@@ -241,9 +241,9 @@ function filterSelectedCombatants(combatants) {
     return combatantsSelected;
   }
   
-  actors.forEach( a => actor_ids.push(a.data._id));
+  actors.forEach( a => actor_ids.push(a.data.id));
   //console.log(actor_ids);
-  combatantsSelected = combatants.filter(c => actor_ids.includes(c.actor.data._id));
+  combatantsSelected = combatants.filter(c => actor_ids.includes(c.actor.data.id));
   
 	return combatantsSelected;
 }
@@ -256,7 +256,7 @@ function filterSelectedCombatants(combatants) {
 function partitionCombatants(combatants) {
   let playerCombatants = [];
 	let npcCombatants = [];
-	combatants.forEach( function(c) {
+	combatants.forEach( c => {
 		if(c.players.length > 0) {
 			playerCombatants.push(c);
 		} else {
@@ -290,8 +290,8 @@ function constructCombatantSelectionHTML(combatants) {
   //const NPCs = npcCombatants.map(c => ({ id:c.id, name:c.name, groupname:c.groupname, grouptype:c.grouptype}));
 
   // actual version
-  const PCs = playerCombatants.map(c => ({ id:c._id, name:c.name }));
-  const NPCs = npcCombatants.map(c => ({ id:c._id, name:c.name, groupname:c.actor.data.token.name, grouptype:c.actor.data.data.details.type}));
+  const PCs = playerCombatants.map(c => ({ id:c.id, name:c.name }));
+  const NPCs = npcCombatants.map(c => ({ id:c.id, name:c.name, groupname:c.actor.data.token.name, grouptype:c.actor.data.data.details.type.value}));
 
   let group_names = [];
   let group_types = [];
@@ -495,6 +495,7 @@ const combatant_selection_group_type_header =
  */
 function constructCombatantSelection(combatantID, combatantName, combatantGroup = "PCs", data_type = "", data_name = "") {
 
+  console.log("data_type", data_type);
   data_type = data_type.split(" ").join("");
   data_name = data_name.split(" ").join("");
 
@@ -520,7 +521,7 @@ function constructCombatantSelection(combatantID, combatantName, combatantGroup 
  * @return html block.
  */
 function constructGroupingSelection(label, type = "Name") {
-
+  console.log("label", label)
   type = type.split(" ").join("");
   const label_clean = label.split(" ").join("");
 
@@ -592,7 +593,10 @@ function constructSelectionScript(includePCs, includeCreatures, groupTypes, grou
     group_types_check_js = `$('.TypeSelection').prop('checked', true);`;
     group_types_uncheck_js = `$('.TypeSelection').prop('checked', false);`;
     
-    groupTypes.forEach( function(g) {
+    console.log(`groupTypes:`, groupTypes);
+    // in dnd5e 1.4, the groupTypes are objects with names: value, swarm, subtype, custom
+    
+    groupTypes.forEach( g => {
       g = g.split(" ").join("");
     
       group_types_js = group_types_js + 
@@ -617,7 +621,8 @@ function constructSelectionScript(includePCs, includeCreatures, groupTypes, grou
     group_names_check_js = `$('.NameSelection').prop('checked', true);`;
     group_names_uncheck_js = `$('.NameSelection').prop('checked', false);`;
     
-		groupNames.forEach( function(g) {
+     console.log(`groupNames:`, groupNames);
+		groupNames.forEach(g => {
 		  g = g.split(" ").join("");
 		 
       group_names_js = group_names_js + 
@@ -1138,11 +1143,11 @@ function constructDialogInitiativeActionsContent(selected_combatants) {
 		<br>
 		<br>
 		${advantage}
-		<br>
 		
-		<br><input type="reset" id="resetButton" class="resetButton">
+		<input type="reset" id="resetButton" class="resetButton">
 			</form>
-		
+	`;	
+		/*
 		<p>
 			<em>${selectActionsBonusParagraph}</em>
 			<br><br>
@@ -1151,8 +1156,8 @@ function constructDialogInitiativeActionsContent(selected_combatants) {
 			<br><br>
 			${selectActionsMultipleParagraph}
 		</p>
-	
-	`;
+	*/
+//	`;
   return dialogInitiativeActionsContent;
 
 }
@@ -1191,7 +1196,7 @@ async function doInitiative(ids, init_roll, actions = "") {
  */
 function calculateDice(combatant, actionSelections, userInput) {
 	console.log("CalculateDice");
-	console.log("Combatant " + combatant._id);
+	console.log("Combatant " + combatant.id);
 	console.log(actionSelections.length + " actionSelections");
 	console.log(userInput);
   
@@ -1245,7 +1250,7 @@ function calculateDice(combatant, actionSelections, userInput) {
 	console.log(actionPool_i);
 	console.log(actions);
 	
-	actions.forEach( function(action, i) {
+	actions.forEach( (action, i) => {
 	  let desc = "";
 	  let die = "";
 	  let bonus = 0;
@@ -1558,7 +1563,7 @@ async function main(selected_combatants) {
 	  return;
 	} else if(selected_combatants.length == 1) {
 		console.log("Single combatant found.")
-		ids = selected_combatants[0]._id;
+		ids = selected_combatants[0].id;
 	} else {
 		// list by PC / NPC. Groups: type, name. 
 		const combatant_selection_html = constructCombatantSelectionHTML(selected_combatants);
@@ -1587,7 +1592,7 @@ async function main(selected_combatants) {
 		return;
 	}
 
-  selected_combatants = selected_combatants.filter(c => (ids.includes(c._id) ));
+  selected_combatants = selected_combatants.filter(c => (ids.includes(c.id) ));
 	console.log(selected_combatants); 
 
 
@@ -1657,15 +1662,15 @@ async function main(selected_combatants) {
 	// object with six entries: cha, con, dex, int, str, wis
 	// object values: mod and prof. 
 	// So for dex: combatants[0].actor.data.data.abilities.dex.mod
-	selected_combatants.forEach( function(c) {
+	selected_combatants.forEach( c => {
 	  console.log(c);
-	  console.log("Combatant " + c._id);
+	  console.log("Combatant " + c.id);
 	
 		let { init_roll, action_description } = calculateDice(c, actionSelections, userInput);
 		console.log(init_roll.formula);
 		console.log(action_description);
 		     
-	  doInitiative(c._id, init_roll.formula, action_description);
+	  doInitiative(c.id, init_roll.formula, action_description);
 	});
 	
 	
@@ -1683,14 +1688,14 @@ async function main(selected_combatants) {
 // Preliminary checks 
 // ------------------
 let errorReason = '';
-let combatants = game.combat.combatants;
+let combatants = game.combat?.combatants;
 
 
-if(errorReason === '' & !game.combat) {
+if(errorReason === '' && !game.combat) {
   errorReason = `${errorNoActiveCombatTracker}`;
-}
+} 
 
-if(errorReason === '' & combatants.length < 1) {
+if(errorReason === '' && combatants.length < 1) {
   errorReason = `${errorNoCombatants}`;
 }
 
