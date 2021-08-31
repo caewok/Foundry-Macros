@@ -2,25 +2,30 @@
 For Dragon's Breath spell. 
 This macro will give the target an at-will Dragon's breath spell to use to roll damage.
 The macro will remove the at-will spell from the target when the spell ends.
-
-To use:
-- Create an at-will spell; set DRAGON_BREATH_WEAPON_ITEM_NAME to the spell name.
-- (For the at-will spell, you may want to copy Dragon Breath, but turn
-   off concentration, change to at-will, and change to 1 action.)
-- Add this macro to a dynamic active effect attached to the original Dragon's Breath spell.
-- (The effect should not be set to transfer on equip and should be set to expire after 
-   60 seconds. Use the macro.execute field to call this macro. 
-- In the macro.execute field, if this macro is named GrantDragonsBreath,
-  the field should be GrantDragonsBreath @item.level
+Add this macro to an effect to be transferred to the target
+Requires the spell to already be created.
 */
 
+// To use, assuming the macro is titled "GrantDragonsBreath"
+// Add to DAE effect with macro.execute
+//   GrantDragonsBreath @item.level 
+// Create a Dragon's Breath weapon at-will spell with appropriate template for damage.
+// Set DRAGON_BREATH_WEAPON_ITEM_NAME to the at-will spell name.
 
 const MACRO_ID = "macro_grant_target_dragon_breath";
-const FORCE_DEBUG = false;
+const FORCE_DEBUG = true;
 const DRAGON_BREATH_WEAPON_ITEM_NAME = "Dragon's Breath (Weapon)"
 const ACTOR_ITEM_MACRO = game.macros.entities.find(m => m.name === "ActorItem");
 const DAMAGE_TYPES = ["acid", "cold", "fire", "lightning", "poison"];
 const DEFAULT_DAMAGE_TYPE = "fire";
+
+function log(...args) {
+  try {
+    if(FORCE_DEBUG) {
+      console.log(MACRO_ID, '|', ...args);
+    }
+  } catch (e) {}
+}
 
 
 log("args", args);
@@ -59,18 +64,8 @@ if(args[0] == "off") {
 }
 
 
-/**
- * Logging function 
- * Only logs when FORCE_DEBUG is set
- * Adds an id to the console message.
- */
-function log(...args) {
-  try {
-    if(FORCE_DEBUG) {
-      console.log(MACRO_ID, '|', ...args);
-    }
-  } catch (e) {}
-}
+
+
 
 /**
  * Test for blank or empty string
@@ -234,4 +229,4 @@ async function SelectionDialog(labels,
 	});
   
 	return(chosen_option)
-} 
+}
