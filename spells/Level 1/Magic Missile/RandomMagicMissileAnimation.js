@@ -1,7 +1,4 @@
-<<<<<<< HEAD
 // Updated for Foundry 0.8.8 and Sequencer
-=======
->>>>>>> main
 // Based on 
 // https://github.com/fantasycalendar/FoundryVTT-Sequencer
 // https://github.com/otigon/Foundry-Macros/blob/main/Magic-Missiles/Blue%20Magic%20Missile

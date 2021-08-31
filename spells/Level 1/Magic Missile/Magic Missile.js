@@ -1,6 +1,6 @@
 // Updated for Foundry 0.8.8 
 // https://gitlab.com/crymic/foundry-vtt-macros/-/blob/master/5e/Spells/Level%201/Magic%20Missile.js
-// Item macro, Midi-qol On Use. This handles damage, so remove it from the spell card.
+// Midi-qol On Use. This handles damage, so remove it from the spell card.
 
 const DAMAGE_TYPE = "force";
 const PAUSE_AFTER_DIE_ROLL = 500;
