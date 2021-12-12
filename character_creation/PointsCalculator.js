@@ -434,7 +434,7 @@ function dialogCallback(callbackFn) {
 // let calc = new PointsCalculator({}, { callback: () => console.log("Finis", this) });
 // calc.render(true);
 
-res = await dialogPromise();
+const res = await dialogPromise();
 console.log(res);
 
 // create chat message with results
