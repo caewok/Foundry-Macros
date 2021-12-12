@@ -15,7 +15,7 @@ Requires the spell to already be created.
 const MACRO_ID = "macro_grant_target_dragon_breath";
 const FORCE_DEBUG = true;
 const DRAGON_BREATH_WEAPON_ITEM_NAME = "Dragon's Breath (Weapon)"
-const ACTOR_ITEM_MACRO = game.macros.entities.find(m => m.name === "ActorItem");
+const ACTOR_ITEM_MACRO = game.macros.find(m => m.name === "ActorItem");
 const DAMAGE_TYPES = ["acid", "cold", "fire", "lightning", "poison"];
 const DEFAULT_DAMAGE_TYPE = "fire";
 
