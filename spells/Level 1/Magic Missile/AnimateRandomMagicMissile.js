@@ -1,5 +1,5 @@
-// Updated for Foundry 0.8.8 and Sequencer
-// Based on 
+// Updated for Foundry v9 and Sequencer v2
+// Based on
 // https://github.com/fantasycalendar/FoundryVTT-Sequencer
 // https://github.com/otigon/Foundry-Macros/blob/main/Magic-Missiles/Blue%20Magic%20Missile
 
@@ -12,7 +12,7 @@
 //args[1] = target token ID
 //args[2] = color  // Options: Blue, Green, Orange, Purple, Yellow
 
-console.log("JB2A RandomMagicMissile|args", args);
+console.log("AnimateRandomMagicMissile|args", args);
 
 
 
@@ -24,7 +24,7 @@ new Sequence()
   .wait(100, 600) // offset the missiles a bit
   .effect()
     .atLocation(the_caster)
-    .reachTowards(the_target)
+    .stretchTo(the_target)
     .JB2A()
     .baseFolder("modules/jb2a_patreon/Library/1st_Level/Magic_Missile")
     .setMustache({
