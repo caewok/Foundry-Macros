@@ -1,0 +1,141 @@
+{
+  "name": "Magic Missile",
+  "type": "spell",
+  "img": "icons/magic/light/projectile-smoke-blue.webp",
+  "data": {
+    "description": {
+      "value": "<div  class=\"rd__b  rd__b--3\"><p>You create three glowing darts of magical force. Each dart hits a creature of your choice that you can see within range. A dart deals [[/r 1d4 + 1]] force damage to its target. The darts all strike simultaneously, and you can direct them to hit one creature or several.</p><div class=\"rd__spc-inline-post\"></div></div><div  class=\"rd__b  rd__b--3\"><div  class=\"rd__b  rd__b--3\"><span class=\"rd__h rd__h--3\" data-title-index=\"24\" > <span class=\"entry-title-inner\">At Higher Levels.</span></span> <p>When you cast this spell using a spell slot of 2nd level or higher, the spell creates one more dart for each slot level above 1st.</p><div class=\"rd__spc-inline-post\"></div></div><div class=\"rd__spc-inline-post\"></div></div>",
+      "chat": "",
+      "unidentified": ""
+    },
+    "source": "PHB pg. 257",
+    "activation": {
+      "type": "action",
+      "cost": 1,
+      "condition": ""
+    },
+    "duration": {
+      "value": null,
+      "units": "inst"
+    },
+    "target": {
+      "value": 1,
+      "width": null,
+      "units": "",
+      "type": "creature"
+    },
+    "range": {
+      "value": 120,
+      "long": 0,
+      "units": "ft"
+    },
+    "uses": {
+      "value": 0,
+      "max": "0",
+      "per": ""
+    },
+    "consume": {
+      "type": "",
+      "target": "",
+      "amount": null
+    },
+    "ability": "int",
+    "actionType": "util",
+    "attackBonus": 0,
+    "chatFlavor": "",
+    "critical": {
+      "threshold": null,
+      "damage": null
+    },
+    "damage": {
+      "parts": [],
+      "versatile": ""
+    },
+    "formula": "",
+    "save": {
+      "ability": "",
+      "dc": null,
+      "scaling": "spell"
+    },
+    "level": 1,
+    "school": "evo",
+    "components": {
+      "value": "",
+      "vocal": true,
+      "somatic": true,
+      "material": false,
+      "ritual": false,
+      "concentration": false
+    },
+    "materials": {
+      "value": "",
+      "consumed": false,
+      "cost": 0,
+      "supply": 0
+    },
+    "preparation": {
+      "mode": "prepared",
+      "prepared": true
+    },
+    "scaling": {
+      "mode": "none",
+      "formula": ""
+    }
+  },
+  "effects": [],
+  "flags": {
+    "favtab": {
+      "isFavorite": false
+    },
+    "midi-qol": {
+      "onUseMacroName": "[postActiveEffects]MagicMissileDamage",
+      "effectActivation": false
+    },
+    "autoanimations": {
+      "killAnim": false,
+      "override": false,
+      "animType": "t1",
+      "animName": "",
+      "hmAnim": "a1",
+      "color": "a1",
+      "dtvar": "dt1",
+      "explosion": false,
+      "explodeVariant": "ev1",
+      "explodeColor": "ec1",
+      "explodeRadius": "0",
+      "explodeLoop": "1",
+      "selfRadius": "5",
+      "animTint": "#ffffff",
+      "auraOpacity": 0.75,
+      "ctaOption": false,
+      "uaStrikeType": "physical",
+      "teleDist": 30
+    },
+    "core": {
+      "sourceId": "Item.v4uql336rE3Omp4t"
+    },
+    "walledtemplates": {
+      "enabled": true
+    },
+    "midiProperties": {
+      "nodam": false,
+      "fulldam": false,
+      "halfdam": false,
+      "rollOther": false,
+      "critOther": false,
+      "magicdam": false,
+      "magiceffect": false,
+      "concentration": false,
+      "toggleEffect": false
+    },
+    "scene-packer": {
+      "sourceId": "Item.fNxgZa5GCK0fIfif"
+    },
+    "exportSource": {
+      "world": "krynn",
+      "system": "dnd5e",
+      "coreVersion": "9.269",
+      "systemVersion": "1.6.1"
+    }
+  }
+}
