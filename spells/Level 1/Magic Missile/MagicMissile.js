@@ -96,11 +96,10 @@ function recalculate() {
     $('#Total').text(num_missiles -  num_selected);
 }
 
-$('.Selection').change( function() {
+$('.Selection').on('keyup', function() {
   //console.log("Selection changed.");
   recalculate();
 });
-
 
 $(document).ready(function() {
   //console.log("Document ready");
