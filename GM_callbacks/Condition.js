@@ -33,6 +33,8 @@ let effect_id = tActor.effects.find(e=> e.data.label === label)?.id;
 if(!effect_id) {
   if(action === "remove") { return; }
 
+  // ActiveEffect data; based on data when clicking "Assign Status Effects" icon for
+  // unconscious in the Token HUD.
   const ae_data = {
     label,
     icon: effect.icon,
