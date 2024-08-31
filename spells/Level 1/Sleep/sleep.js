@@ -19,34 +19,25 @@ RAW: Sleep is 5d8 at first level; 2d8 for each additional spell slot level
 */
 
 // based on @ccjmk macro for sleep. Gets targets and ignores those who are immune to sleep.
-// Updated for Foundry v9
+// Updated for Foundry v11
+// Requires DFred's Convenient Effects and midi (for the chat message)
+const SLEEP_EFFECT_NAME = "Unconscious"; // Effect name per DFred's. Likely localized name.
+const HP_PROPERTY = "system.attributes.hp.value";
 
 /**
  * Helper function to determine if token is unconscious.
- * - Has the unconscious condition or
  * - Has less than 1 HP
  * @param {Actor5e} actor
  */
-function isUnconscious(actor) {
-  if(actor.data.data.attributes.hp.value < 1) return true;
-
-  const effect = CONFIG.statusEffects.find(se => se.id === "unconscious");
-  const label = game.i18n.localize(effect.label)
-  return actor.effects.some(e => e.data.label === label);
-}
+function isUnconscious(actor) { return getProperty(actor, HP_PROPERTY) < 1; }
 
 /**
  * Helper function to determine if actor is asleep.
- * - has the asleep condition
- * - compare with unconscious, above.
+ * - has the unconscious condition
+ * - has more than 0 HP
  * @param {Actor5e} actor
  */
-function isAsleep(actor) {
-  const effect = CONFIG.statusEffects.find(se => se.id === "sleep");
-  const label = game.i18n.localize(effect.label)
-  return actor.effects.some(e => e.data.label === label);
-}
-
+function isAsleep(actor) { return !isUnconscious && game.dfreds.effectInterface.hasEffectApplied(SLEEP_EFFECT_NAME, actor.uuid); }
 
 /**
  * Helper function to determine if token is immune to sleep
@@ -55,10 +46,21 @@ function isAsleep(actor) {
  * @param {Actor5e} actor
  */
 function immuneToSleep(actor) {
-  return actor.data.data.traits.ci.custom?.match(/[Ss]leep/)
-     ||  actor.data.data.traits.ci.value?.includes("unconscious");
+  return actor.system.traits.ci.custom?.match(/[Ss]leep/)
+     || actor.system.traits.ci.value?.has("unconscious");
 }
 
+/**
+ * Helper function to turn on or off an effect.
+ * @param {Token} token
+ * @param {string} effect
+ * @param {boolean} [enable=true]
+ */
+async function applyEffect(token, effect, enable = true) {
+  const uuid = token.actor.uuid;
+  if ( !(enable ^ game.dfreds.effectInterface.hasEffectApplied(effect, uuid)) ) return;
+  game.dfreds.effectInterface.toggleEffect(effect, { uuids: [uuid] });
+}
 
 // Typically, args is a length 1 array with an object with a ton of midi-qol values.
 // The variable "actor" is also defined at the top level of a macro; here it is the caster.
@@ -69,66 +71,72 @@ function immuneToSleep(actor) {
 // - args[0].itemCardId: ID string for the card of the magic missile spell in the chat
 // - args[0].targets: Array of TokenDocuments5e objects, one per each token targeted
 /* To test in console
-Select an actor and one or more targets
-t = canvas.tokens.controlled[0];
-targets = Array.from(game.user.targets)
-args = [ { spellLevel: 1, actor: t.actor, tokenId: t.id, targets, itemCardId: "" }]
+Select an actor and target 1+ tokens
+
+messages = [...game.messages].sort((a, b) => b.timestamp - a.timestamp)
+
+
+caster = canvas.tokens.controlled[0]
+targets = [...game.user.targets]
+args = [{
+  actor: caster.actor,
+  tokenId: caster.id,
+  targets: targets.map(t => t.document),
+  spellLevel: 1,
+  itemCardId: ""
+}]
+
 */
 
-const SPELL_LEVEL = parseInt(args[0].spellLevel);
-const CASTER = args[0].actor;
-const TARGETS = args[0].targets;
-const ITEM_CARD_ID = args[0].itemCardId;
-const CONDITION_MACRO = game.macros.getName("Condition");
-
-if(!CONDITION_MACRO) {
-  ui.notifications.error("Sleep Macro|No GM condition macro found.");
-  return;
-}
-
-console.log("Sleep Macro|args", args[0]);
-const sleep_roll = await new Roll(`${(SPELL_LEVEL * 2) + 3}d8`).roll({ async: true });
+console.log("Sleep Macro|args", args);
+const { spellLevel, itemCardId } = args[0];
+const sleep_roll = await new Roll(`${(spellLevel * 2) + 3}d8`).roll({ async: true });
 await game.dice3d?.showForRoll(sleep_roll); // Roll 3d dice if available
 console.log(`Sleep Macro|HP: ${sleep_roll.result}`);
 
 // Sort targets low -> high HP;
-TARGETS.sort((a,b) => a.actor.data.data.attributes.hp.value - b.actor.data.data.attributes.hp.value);
-// To check sorted array in console (also, the for loop should print names in order):
-// console.log(TARGETS.map(t => t.name))
+const targets = args[0].targets.map(tokenD => tokenD.object);
+targets.sort((a,b) => getProperty(a.actor, HP_PROPERTY) - getProperty(b.actor, HP_PROPERTY));
+// Debug HP: console.table(targets.map(t => getProperty(t.actor, HP_PROPERTY)))
 
 let remainingSleepHp = sleep_roll.result;
-const results_arr = [];
-const ln = TARGETS.length;
-for(const target of TARGETS) {
-  const hp = target.actor.data.data.attributes.hp.value;
+const chatAdditions = [];
+for(const target of targets) {
+  const tActor = target.actor;
+  const hp = getProperty(tActor, HP_PROPERTY);
+  const { name: targetName, id: targetId } = target;
+  const targetImage = target.document.texture.src
 
-  if(hp > remainingSleepHp || isUnconscious(target.actor) || immuneToSleep(target.actor) || isAsleep(target.actor)) {
+  if( hp > remainingSleepHp || isUnconscious(tActor) || immuneToSleep(tActor) || isAsleep(tActor) ) {
+    // Target unaffected
     // Add some console logging to track why a target was not affected
     // inefficient to repeat, but easier for testing
-    console.log(`Resisted\t`, target.name,`Total HP:`, hp,
-      isUnconscious(target.actor) ? " (Unconscious)" : "",
-      immuneToSleep(target.actor) ? " (Immune)" : "",
-      isAsleep(target.actor) ? " (Asleep)" : "");
+    const reason = (isUnconscious(tActor) ? " (Unconscious!)" : "")
+      +  (immuneToSleep(tActor) ? " (Immune!)" : "")
+      + (isAsleep(tActor) ? " (Already asleep!)" : "")
+
+    console.log(`Resisted\t${targetName} | Total HP: ${hp}${reason}`);
 
     // Add to chat message
-    results_arr.push(`<div class="midi-qol-flex-container"><div>does not affect</div><div class="midi-qol-target-npc midi-qol-target-name" id="${target.id}"> ${target.name}</div><div><img src="${target.data.img}" width="30" height="30" style="border:0px"></div></div>`);
+    chatAdditions.push(`<div class="midi-qol-flex-container"><div>does not affect</div><div class="midi-qol-target-npc midi-qol-target-name" id="${targetId}"> ${targetName}</div><div><img src="${targetImage}" width="30" height="30" style="border:0px"></div></div>`);
   } else {
+    // Target asleep
     // HP remaining
     remainingSleepHp -= hp;
     console.log(`Sleeping\t${target.name} Total HP: ${hp} (Remaining SleepHP: ${remainingSleepHp})`);
-    results_arr.push(`<div class="midi-qol-flex-container"><div>affects</div><div class="midi-qol-target-npc midi-qol-target-name" id="${target.id}"> ${target.name}</div><div><img src="${target.data.img}" width="30" height="30" style="border:0px"></div></div>`);
+    chatAdditions.push(`<div class="midi-qol-flex-container"><div>affects</div><div class="midi-qol-target-npc midi-qol-target-name" id="${targetId}"> ${targetName}</div><div><img src="${targetImage}" width="30" height="30" style="border:0px"></div></div>`);
 
-    // Knock them out!
-    await CONDITION_MACRO.execute(target.id, "sleep", "enable");
+    // Put the target to sleep
+    await applyEffect(target, SLEEP_EFFECT_NAME)
   }
 }
 
 // Update the chat message for the sleep spell indicating who is asleep
 //await wait(500);
-const results_txt = `<div><div class="midi-qol-flex-container"><em>${sleep_roll.result} total HP affected.</em>\n </div><div class="midi-qol-nobox">${results_arr.join('')}</div></div>`;
-const chatMessage = game.messages.get(ITEM_CARD_ID);
-let content = duplicate(chatMessage.data.content);
-const searchString =  /<div class="midi-qol-hits-display">[\s\S]*<div class="end-midi-qol-hits-display">/g;
-const replaceString = `<div class="midi-qol-hits-display"><div class="end-midi-qol-hits-display">${results_txt}`;
+const results_txt = `<div><div class="midi-qol-flex-container"><em>${sleep_roll.result} total HP affected.</em>\n </div><div class="midi-qol-nobox">${chatAdditions.join('')}</div></div>`;
+const chatMessage = game.messages.get(itemCardId);
+let content = duplicate(chatMessage.content);
+const searchString =  /<div class="midi-qol-damage-roll">[\s\S]*<div class="end-midi-qol-damage-roll">/g;
+const replaceString = `<div class="midi-qol-damage-roll"><div class="midi-qol-damage-roll">${results_txt}`;
 content = content.replace(searchString, replaceString);
 await chatMessage.update({ content });
